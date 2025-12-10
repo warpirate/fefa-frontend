@@ -1,0 +1,286 @@
+/* Checkout Page Styles */
+
+/* Step Progress Indicator */
+.checkout-step {
+  transition: all 0.3s ease;
+}
+
+.checkout-step.active {
+  transform: scale(1.05);
+}
+
+.checkout-step.completed {
+  background: linear-gradient(135deg, #f3e8ff 0%, #e0e7ff 100%);
+}
+
+/* Form Input Styles */
+.checkout-input {
+  transition: all 0.3s ease;
+}
+
+.checkout-input:focus {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.15);
+}
+
+/* Payment Method Cards */
+.payment-method-card {
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.payment-method-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.payment-method-card.selected {
+  background: linear-gradient(135deg, #f3e8ff 0%, #e0e7ff 100%);
+  border-color: #a855f7;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(168, 85, 247, 0.2);
+}
+
+/* Order Item Cards */
+.order-item-card {
+  transition: all 0.3s ease;
+}
+
+.order-item-card:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Success Animation */
+@keyframes successPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+  }
+}
+
+.success-icon {
+  animation: successPulse 2s infinite;
+}
+
+/* Loading States */
+.checkout-loading {
+  position: relative;
+  overflow: hidden;
+}
+
+.checkout-loading::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  animation: loadingShimmer 1.5s infinite;
+}
+
+@keyframes loadingShimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* Error States */
+.checkout-error {
+  animation: errorShake 0.5s ease-in-out;
+}
+
+@keyframes errorShake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+/* Form Validation */
+.checkout-input.error {
+  border-color: #ef4444;
+  background-color: #fef2f2;
+}
+
+.checkout-input.error:focus {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .checkout-step {
+    margin-bottom: 1rem;
+  }
+  
+  .payment-method-card {
+    margin-bottom: 0.75rem;
+  }
+  
+  .order-item-card {
+    padding: 0.75rem;
+  }
+}
+
+/* Custom Scrollbar */
+.checkout-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.checkout-scroll::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.checkout-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.checkout-scroll::-webkit-scrollbar-thumb:hover {
+  background: #a855f7;
+}
+
+/* Button Hover Effects */
+.checkout-btn {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.checkout-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: left 0.5s;
+}
+
+.checkout-btn:hover::before {
+  left: 100%;
+}
+
+/* Card Hover Effects */
+.checkout-card {
+  transition: all 0.3s ease;
+}
+
+.checkout-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* Progress Bar Animation */
+@keyframes progressFill {
+  0% {
+    width: 0%;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+.checkout-progress-bar {
+  animation: progressFill 0.5s ease-out;
+}
+
+/* Fade In Animation */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.checkout-fade-in {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+/* Slide In Animation */
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.checkout-slide-in {
+  animation: slideInRight 0.3s ease-out;
+}
+
+/* Pulse Animation for Important Elements */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.checkout-pulse {
+  animation: pulse 2s infinite;
+}
+
+/* Custom Focus Styles */
+.checkout-focus:focus {
+  outline: none;
+  ring: 2px;
+  ring-color: #a855f7;
+  ring-opacity: 0.5;
+}
+
+/* Print Styles */
+@media print {
+  .checkout-no-print {
+    display: none !important;
+  }
+  
+  .checkout-print-only {
+    display: block !important;
+  }
+  
+  .checkout-page {
+    background: white !important;
+    color: black !important;
+  }
+}

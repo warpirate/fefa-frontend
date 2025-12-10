@@ -1,0 +1,26 @@
+[
+  {
+    "name": "Sarah Johnson",
+    "rating": 5,
+    "review": "Absolutely stunning! The quality exceeded my expectations and the packaging was beautiful.",
+    "product": "Diamond Earrings"
+  },
+  {
+    "name": "Emily Chen",
+    "rating": 5,
+    "review": "Fast shipping and excellent customer service. Will definitely order again!",
+    "product": "Gold Necklace"
+  },
+  {
+    "name": "Maria Rodriguez",
+    "rating": 5,
+    "review": "Perfect for my wedding day. Received so many compliments!",
+    "product": "Pearl Set"
+  },
+  {
+    "name": "Jessica Brown",
+    "rating": 5,
+    "review": "Love the unique designs. FEFA has become my go-to jewelry store.",
+    "product": "Statement Ring"
+  }
+]

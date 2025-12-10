@@ -1,0 +1,599 @@
+/* Gift Page Styles */
+
+.gift-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+}
+
+/* Only apply container styles to gift page sections, not header */
+.gift-page section .container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+@media (min-width: 640px) {
+  .gift-page section .container {
+    padding: 0 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .gift-page section .container {
+    padding: 0 2rem;
+  }
+}
+
+/* Hero Section */
+.gift-hero {
+  background: linear-gradient(135deg, #4B006E 0%, #D4AF37 100%);
+  color: white;
+  padding: 140px 0 80px;
+  position: relative;
+  overflow: hidden;
+}
+
+.gift-hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="gift-pattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23gift-pattern)"/></svg>');
+  opacity: 0.3;
+}
+
+.gift-hero-content {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.gift-hero-title {
+  font-size: 3.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  line-height: 1.2;
+}
+
+.gift-hero-subtitle {
+  display: block;
+  font-size: 2rem;
+  font-weight: 300;
+  margin-top: 0.5rem;
+  color: #F8E4EB;
+}
+
+.gift-hero-description {
+  font-size: 1.2rem;
+  margin-bottom: 2rem;
+  opacity: 0.9;
+  line-height: 1.6;
+}
+
+.gift-hero-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn-primary, .btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 2rem;
+  border-radius: 50px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.btn-primary {
+  background: white;
+  color: #4B006E;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: white;
+  border: 2px solid white;
+}
+
+.btn-secondary:hover {
+  background: white;
+  color: #4B006E;
+  transform: translateY(-2px);
+}
+
+.btn-icon {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+/* Section Styles */
+.section-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.section-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #4B006E;
+  margin-bottom: 1rem;
+}
+
+.section-description {
+  font-size: 1.1rem;
+  color: #666;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Gift Categories */
+.gift-categories {
+  padding: 80px 0;
+  background: white;
+}
+
+.category-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 3rem;
+  flex-wrap: wrap;
+}
+
+.category-tab {
+  padding: 1rem 2rem;
+  border: 2px solid #E5E7EB;
+  background: white;
+  color: #4B006E;
+  border-radius: 50px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.category-tab:hover {
+  border-color: #D4AF37;
+  color: #D4AF37;
+}
+
+.category-tab.active {
+  background: #4B006E;
+  color: white;
+  border-color: #4B006E;
+}
+
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+}
+
+.category-item {
+  background: white;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.category-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+
+.category-link {
+  display: block;
+  padding: 2rem;
+  text-decoration: none;
+  color: inherit;
+  text-align: center;
+}
+
+.category-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.category-item-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #4B006E;
+  margin-bottom: 0.5rem;
+}
+
+.category-count {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+/* Featured Gifts */
+.featured-gifts {
+  padding: 80px 0;
+  background: #F8F9FA;
+}
+
+.gifts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.gift-card {
+  background: white;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.gift-card:hover {
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+
+.gift-image-container {
+  position: relative;
+  height: 250px;
+  overflow: hidden;
+}
+
+.gift-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.gift-card:hover .gift-image {
+  transform: scale(1.05);
+}
+
+.gift-badges {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.badge {
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.badge.new {
+  background: #10B981;
+  color: white;
+}
+
+.badge.bestseller {
+  background: #D4AF37;
+  color: white;
+}
+
+.gift-actions {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.gift-card:hover .gift-actions {
+  opacity: 1;
+}
+
+.action-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: white;
+  color: #4B006E;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.action-btn:hover {
+  background: #4B006E;
+  color: white;
+  transform: scale(1.1);
+}
+
+.gift-info {
+  padding: 1.5rem;
+}
+
+.gift-name {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #4B006E;
+  margin-bottom: 0.5rem;
+}
+
+.gift-rating {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.stars {
+  display: flex;
+  gap: 0.2rem;
+}
+
+.star {
+  width: 1rem;
+  height: 1rem;
+  color: #E5E7EB;
+}
+
+.star.filled {
+  color: #D4AF37;
+}
+
+.rating-text {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.gift-price {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.current-price {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #4B006E;
+}
+
+.original-price {
+  font-size: 1rem;
+  color: #999;
+  text-decoration: line-through;
+}
+
+/* Gift Services */
+.gift-services {
+  padding: 80px 0;
+  background: white;
+}
+
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+}
+
+.service-card {
+  background: white;
+  border: 2px solid #E5E7EB;
+  border-radius: 20px;
+  padding: 2rem;
+  text-align: center;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.service-card:hover {
+  border-color: #D4AF37;
+  box-shadow: 0 8px 30px rgba(212, 175, 55, 0.15);
+}
+
+.service-icon {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #4B006E, #D4AF37);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.5rem;
+  color: white;
+}
+
+.service-icon svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.service-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #4B006E;
+  margin-bottom: 1rem;
+}
+
+.service-description {
+  color: #666;
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+.service-price {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #D4AF37;
+}
+
+/* Gift Card Section */
+.gift-card-section {
+  padding: 80px 0;
+  background: linear-gradient(135deg, #F8E4EB 0%, #ffffff 100%);
+}
+
+.gift-card-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: center;
+}
+
+.gift-card-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #4B006E;
+  margin-bottom: 1rem;
+}
+
+.gift-card-description {
+  font-size: 1.1rem;
+  color: #666;
+  margin-bottom: 2rem;
+  line-height: 1.6;
+}
+
+.gift-card-features {
+  margin-bottom: 2rem;
+}
+
+.feature {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+}
+
+.feature-icon {
+  width: 1.2rem;
+  height: 1.2rem;
+  color: #D4AF37;
+}
+
+.gift-card-visual {
+  display: flex;
+  justify-content: center;
+}
+
+.gift-card-preview {
+  width: 300px;
+  height: 200px;
+  background: linear-gradient(135deg, #4B006E, #D4AF37);
+  border-radius: 20px;
+  padding: 2rem;
+  color: white;
+  box-shadow: 0 10px 40px rgba(75, 0, 110, 0.3);
+  transform: rotate(-5deg);
+  transition: transform 0.3s ease;
+}
+
+.gift-card-preview:hover {
+  transform: rotate(0deg) scale(1.05);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.card-amount {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.card-body p {
+  margin-bottom: 1rem;
+  opacity: 0.9;
+}
+
+.card-code {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  text-align: center;
+  font-weight: 600;
+  letter-spacing: 2px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .gift-hero-title {
+    font-size: 2.5rem;
+  }
+  
+  .gift-hero-subtitle {
+    font-size: 1.5rem;
+  }
+  
+  .gift-hero-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .category-tabs {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .gift-card-content {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  
+  .gift-card-preview {
+    transform: none;
+  }
+  
+  .section-title {
+    font-size: 2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .gift-hero {
+    padding: 100px 0 60px;
+  }
+  
+  .gift-hero-title {
+    font-size: 2rem;
+  }
+  
+  .gift-hero-subtitle {
+    font-size: 1.2rem;
+  }
+  
+  .category-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .gifts-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .services-grid {
+    grid-template-columns: 1fr;
+  }
+}

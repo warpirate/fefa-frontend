@@ -1,0 +1,72 @@
+/* Button.css */
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+  border-radius: 0.25rem;
+}
+
+.button:focus {
+  outline: none;
+}
+
+/* Button variants */
+.button-primary {
+  background-color: var(--primary);
+  color: white;
+}
+
+.button-primary:hover {
+  background-color: rgba(75, 0, 110, 0.9); /* --primary with opacity */
+}
+
+.button-secondary {
+  background-color: var(--accent);
+  color: white;
+}
+
+.button-secondary:hover {
+  background-color: rgba(212, 175, 55, 0.9); /* --accent with opacity */
+}
+
+.button-outline {
+  border: 2px solid var(--primary);
+  color: var(--primary);
+}
+
+.button-outline:hover {
+  background-color: rgba(75, 0, 110, 0.1); /* --primary with low opacity */
+}
+
+/* Button sizes */
+.button-sm {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+.button-md {
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+}
+
+.button-lg {
+  padding: 0.75rem 1.5rem;
+  font-size: 1.125rem;
+}
+
+/* Width variants */
+.button-full-width {
+  width: 100%;
+}
+
+/* Button content animation */
+.button-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

@@ -1,0 +1,37 @@
+[
+  {
+    "name": "Earrings",
+    "image": "/images/earrings.png",
+    "slug": "earrings"
+  },
+  {
+    "name": "Bangles",
+    "image": "/images/bangles.png",
+    "slug": "bangles"
+  },
+  {
+    "name": "Bracelets",
+    "image": "/images/braceletts.png",
+    "slug": "bracelets"
+  },
+  {
+    "name": "Necklaces",
+    "image": "/images/necklaces.png",
+    "slug": "necklaces"
+  },
+  {
+    "name": "Chains",
+    "image": "/images/chains.png",
+    "slug": "chains"
+  },
+  {
+    "name": "Rings",
+    "image": "/images/rings.png",
+    "slug": "rings"
+  },
+  {
+    "name": "Hair Accessories",
+    "image": "/images/hairaccessories.png",
+    "slug": "hair-accessories"
+  }
+]

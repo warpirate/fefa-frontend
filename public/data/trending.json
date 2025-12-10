@@ -1,0 +1,44 @@
+[
+  {
+    "id": 1,
+    "gradient": "from-green-400 to-green-600",
+    "title": "Love, laughter & a little sparkle",
+    "icon": "💎"
+  },
+  {
+    "id": 2,
+    "gradient": "from-gray-800 to-gray-900",
+    "title": "From the house of fefa Handcrafted in Jaipur",
+    "icon": "✨"
+  },
+  {
+    "id": 3,
+    "gradient": "from-yellow-400 to-yellow-600",
+    "title": "Gold stud earrings with textured finish",
+    "icon": "👑"
+  },
+  {
+    "id": 4,
+    "gradient": "from-purple-500 to-purple-700",
+    "title": "Jewelry store interior with fefa collection",
+    "icon": "🏪"
+  },
+  {
+    "id": 5,
+    "gradient": "from-pink-300 to-pink-500",
+    "title": "Silver choker with floral motifs",
+    "icon": "🌸"
+  },
+  {
+    "id": 6,
+    "gradient": "from-amber-400 to-amber-600",
+    "title": "Traditional Indian jewelry in heritage setting",
+    "icon": "🏛️"
+  },
+  {
+    "id": 7,
+    "gradient": "from-rose-300 to-rose-500",
+    "title": "Pink outfit with elegant jewelry",
+    "icon": "👗"
+  }
+]

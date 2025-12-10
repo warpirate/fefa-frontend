@@ -1,0 +1,148 @@
+/* UserDropdown.css */
+
+/* User Button */
+.user-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background-color: transparent;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--primary);
+}
+
+.user-button:hover {
+  background-color: var(--soft-pink-100);
+  border-color: var(--primary);
+}
+
+.user-avatar {
+  width: 2rem;
+  height: 2rem;
+  background-color: var(--soft-pink-100);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+}
+
+.user-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--primary);
+}
+
+/* User Dropdown */
+.user-dropdown {
+  position: absolute !important;
+  top: 100% !important;
+  right: 0 !important;
+  left: auto !important;
+  margin-top: 0.5rem;
+  width: 10rem !important;
+  background-color: white !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 0.5rem !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+  z-index: 50 !important;
+  overflow: hidden;
+  min-width: 10rem !important;
+  max-width: 10rem !important;
+  padding: 0 !important;
+}
+
+/* Dropdown Menu - Override Header styles */
+.user-dropdown .dropdown-menu {
+  padding: 0.25rem 0 !important;
+  position: static !important;
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  width: 100% !important;
+}
+
+/* Divider */
+.dropdown-divider {
+  height: 1px;
+  background-color: #e5e7eb;
+  margin: 0.25rem 0;
+}
+
+.user-dropdown .dropdown-item {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  width: 100% !important;
+  padding: 0.5rem 0.75rem !important;
+  background: none !important;
+  border: none !important;
+  text-align: left !important;
+  text-decoration: none !important;
+  color: #374151 !important;
+  font-size: 0.8rem !important;
+  font-weight: normal !important;
+  transition: background-color 0.2s ease !important;
+  cursor: pointer !important;
+  margin: 0 !important;
+}
+
+.user-dropdown .dropdown-item:hover {
+  background-color: var(--soft-pink-100) !important;
+  color: var(--primary) !important;
+  font-weight: normal !important;
+}
+
+.user-dropdown .dropdown-item.logout-item {
+  color: #ef4444 !important;
+}
+
+.user-dropdown .dropdown-item.logout-item:hover {
+  background-color: #fef2f2 !important;
+  color: #dc2626 !important;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .user-dropdown {
+    width: 9rem;
+    min-width: 9rem;
+    max-width: 9rem;
+  }
+  
+  .dropdown-item {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .user-button {
+    padding: 0.375rem 0.5rem;
+  }
+  
+  .user-avatar {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+  
+  .user-name {
+    font-size: 0.8rem;
+  }
+  
+  .user-dropdown {
+    width: 8rem;
+    min-width: 8rem;
+    max-width: 8rem;
+  }
+  
+  .dropdown-item {
+    padding: 0.375rem 0.5rem;
+    font-size: 0.7rem;
+  }
+}

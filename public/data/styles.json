@@ -1,0 +1,22 @@
+[
+  {
+    "name": "Classic",
+    "description": "Timeless elegance",
+    "image": "/images/classic-style.jpg"
+  },
+  {
+    "name": "Modern",
+    "description": "Contemporary designs",
+    "image": "/images/modern-style.jpg"
+  },
+  {
+    "name": "Formal",
+    "description": "Sophisticated elegance",
+    "image": "/images/formal-style.jpg"
+  },
+  {
+    "name": "Traditional",
+    "description": "Heritage craftsmanship",
+    "image": "/images/traditional-style.jpg"
+  }
+]

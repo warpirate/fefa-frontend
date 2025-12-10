@@ -1,0 +1,9 @@
+[
+  { "name": "All", "value": "all" },
+  { "name": "Earrings", "value": "earrings" },
+  { "name": "Necklaces", "value": "necklaces" },
+  { "name": "Bangles", "value": "bangles" },
+  { "name": "Rings", "value": "rings" },
+  { "name": "Sets", "value": "sets" },
+  { "name": "Gifting", "value": "gifting" }
+]

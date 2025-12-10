@@ -1,0 +1,46 @@
+[
+  {
+    "id": "1",
+    "name": "Alpana Sunburst Elegance Drops Earrings",
+    "price": 1079,
+    "originalPrice": 1799,
+    "discount": 40,
+    "image": "/images/product-1.png",
+    "hoverImage": "/images/product-1-hover.png",
+    "category": "earrings",
+    "description": "Exquisite earrings designed with royal elegance and modern sophistication"
+  },
+  {
+    "id": "2",
+    "name": "Pashmina Rimsha Dangler Earrings",
+    "price": 959,
+    "originalPrice": 1599,
+    "discount": 40,
+    "image": "/images/product-2.png",
+    "hoverImage": "/images/product-2-hover.png",
+    "category": "earrings",
+    "description": "Beautiful dangler earrings with traditional craftsmanship"
+  },
+  {
+    "id": "3",
+    "name": "Alpana Lotus Blossom Studs",
+    "price": 899,
+    "originalPrice": 1499,
+    "discount": 40,
+    "image": "/images/product-3.png",
+    "hoverImage": "/images/product-3-hover.png",
+    "category": "earrings",
+    "description": "Elegant stud earrings with lotus design"
+  },
+  {
+    "id": "4",
+    "name": "Nazakat Haseen Pearl Studded Hoop",
+    "price": 1099,
+    "originalPrice": 1849,
+    "discount": 41,
+    "image": "/images/product-4.png",
+    "hoverImage": "/images/product-4-hover.png",
+    "category": "earrings",
+    "description": "Pearl studded hoop earrings for special occasions"
+  }
+]

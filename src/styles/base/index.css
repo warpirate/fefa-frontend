@@ -1,0 +1,65 @@
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #333333;
+  --primary: #4B006E; /* Deep Purple - Primary, headers, buttons, logo */
+  --accent: #D4AF37; /* Gold - Accents, hover effects, borders */
+  --soft-pink-100: #F8E4EB; /* Soft Pink - Background, overlays */
+  --soft-pink-200: #F9D9E4; /* Soft Pink variant */
+  --white: #FFFFFF; /* White - Text, buttons, spaces */
+  --dark-gray: #333333; /* Dark Gray - Body text, icons */
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-accent: var(--accent);
+  --color-soft-pink-100: var(--soft-pink-100);
+  --color-soft-pink-200: var(--soft-pink-200);
+  --color-white: var(--white);
+  --color-dark-gray: var(--dark-gray);
+  --font-sans: 'Poppins', sans-serif;
+  --font-script: 'Dancing Script', cursive;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+    --primary: #6B1A7A; /* Lighter deep purple for dark mode */
+    --accent: #E6C547; /* Lighter gold for dark mode */
+    --soft-pink-100: #2D1A2F; /* Darker version of soft pink for dark mode */
+    --soft-pink-200: #3D2638; /* Darker version of soft pink for dark mode */
+    --white: #f8f9fa; /* Slightly off-white for dark mode */
+    --dark-gray: #e5e7eb; /* Lighter gray for dark mode text */
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+h1, h2, h3, .script-font {
+  font-family: var(--font-script);
+}
+
+/* Elegant transitions */
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
+}
+
+/* Smooth hover effects */
+.hover-lift {
+  transition: transform 0.3s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+}
