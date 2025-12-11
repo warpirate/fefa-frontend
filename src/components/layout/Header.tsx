@@ -26,75 +26,7 @@ const navigation = [
   { 
     name: 'COLLECTIONS', 
     href: '/collections',
-    hasDropdown: true,
-    dropdown: {
-      categories: [
-        {
-          title: 'LAB GROWN DIAMONDS',
-          items: [
-            { name: 'Pendant', href: '/collections/lab-grown-diamonds/pendant' },
-            { name: 'Earrings', href: '/collections/lab-grown-diamonds/earrings' },
-            { name: 'Necklace', href: '/collections/lab-grown-diamonds/necklace' },
-          ]
-        },
-        {
-          title: 'STERLING SILVER',
-          items: [
-            { name: 'Couple Rings', href: '/collections/sterling-silver/couple-rings' },
-            { name: 'Earrings', href: '/collections/sterling-silver/earrings' },
-            { name: 'Ring', href: '/collections/sterling-silver/ring' },
-            { name: 'Pendant Sets', href: '/collections/sterling-silver/pendant-sets' },
-            { name: 'Pendants', href: '/collections/sterling-silver/pendants' },
-            { name: 'Initials', href: '/collections/sterling-silver/initials' },
-            { name: 'Silver Coins', href: '/collections/sterling-silver/silver-coins' },
-          ]
-        },
-        {
-          title: 'NEW LAUNCH',
-          items: [
-            { name: 'Halo Essence', href: '/collections/new-launch/halo-essence' },
-            { name: 'Fringes', href: '/collections/new-launch/fringes' },
-            { name: 'Madhubani', href: '/collections/new-launch/madhubani' },
-            { name: 'Tropical Wildlife', href: '/collections/new-launch/tropical-wildlife' },
-            { name: 'Boho Tribe', href: '/collections/new-launch/boho-tribe' },
-            { name: 'Woven Wonders', href: '/collections/new-launch/woven-wonders' },
-            { name: 'Royal Romance', href: '/collections/new-launch/royal-romance' },
-            { name: 'Panchhi', href: '/collections/new-launch/panchhi' },
-          ]
-        },
-        {
-          title: 'BEST SELLERS',
-          items: [
-            { name: 'Pashmina', href: '/collections/best-sellers/pashmina' },
-            { name: 'Warli', href: '/collections/best-sellers/warli' },
-            { name: 'Bloom', href: '/collections/best-sellers/bloom' },
-            { name: 'Zodiac', href: '/collections/best-sellers/zodiac' },
-            { name: 'Aham Brahmasmi', href: '/collections/best-sellers/aham-brahmasmi' },
-            { name: 'Forever More', href: '/collections/best-sellers/forever-more' },
-            { name: 'Bagh E Fiza', href: '/collections/best-sellers/bagh-e-fiza' },
-            { name: 'Fresh Fern', href: '/collections/best-sellers/fresh-fern' },
-          ]
-        },
-        {
-          title: 'TOP PICKS',
-          items: [
-            { name: 'Qasbah', href: '/collections/top-picks/qasbah' },
-            { name: 'Before Sunrise', href: '/collections/top-picks/before-sunrise' },
-            { name: 'Sparkling Elegance', href: '/collections/top-picks/sparkling-elegance' },
-            { name: 'Zulu', href: '/collections/top-picks/zulu' },
-            { name: 'Jewels of Taj', href: '/collections/top-picks/jewels-of-taj' },
-            { name: 'Heer', href: '/collections/top-picks/heer' },
-            { name: 'Nazakat', href: '/collections/top-picks/nazakat' },
-          ]
-        },
-        {
-          title: 'NEW ARRIVALS',
-          items: [
-            { name: 'Tropical Wildlife', href: '/collections/new-arrivals/tropical-wildlife' },
-          ]
-        }
-      ]
-    }
+    hasDropdown: false
   },
 ];
 
@@ -116,75 +48,7 @@ const mobileNavIcons = [
     name: 'COLLECTIONS', 
     icon: FiGrid, 
     href: '/collections',
-    hasDropdown: true,
-    dropdown: {
-      categories: [
-        {
-          title: 'LAB GROWN DIAMONDS',
-          items: [
-            { name: 'Pendant', href: '/collections/lab-grown-diamonds/pendant' },
-            { name: 'Earrings', href: '/collections/lab-grown-diamonds/earrings' },
-            { name: 'Necklace', href: '/collections/lab-grown-diamonds/necklace' },
-          ]
-        },
-        {
-          title: 'STERLING SILVER',
-          items: [
-            { name: 'Couple Rings', href: '/collections/sterling-silver/couple-rings' },
-            { name: 'Earrings', href: '/collections/sterling-silver/earrings' },
-            { name: 'Ring', href: '/collections/sterling-silver/ring' },
-            { name: 'Pendant Sets', href: '/collections/sterling-silver/pendant-sets' },
-            { name: 'Pendants', href: '/collections/sterling-silver/pendants' },
-            { name: 'Initials', href: '/collections/sterling-silver/initials' },
-            { name: 'Silver Coins', href: '/collections/sterling-silver/silver-coins' },
-          ]
-        },
-        {
-          title: 'NEW LAUNCH',
-          items: [
-            { name: 'Halo Essence', href: '/collections/new-launch/halo-essence' },
-            { name: 'Fringes', href: '/collections/new-launch/fringes' },
-            { name: 'Madhubani', href: '/collections/new-launch/madhubani' },
-            { name: 'Tropical Wildlife', href: '/collections/new-launch/tropical-wildlife' },
-            { name: 'Boho Tribe', href: '/collections/new-launch/boho-tribe' },
-            { name: 'Woven Wonders', href: '/collections/new-launch/woven-wonders' },
-            { name: 'Royal Romance', href: '/collections/new-launch/royal-romance' },
-            { name: 'Panchhi', href: '/collections/new-launch/panchhi' },
-          ]
-        },
-        {
-          title: 'BEST SELLERS',
-          items: [
-            { name: 'Pashmina', href: '/collections/best-sellers/pashmina' },
-            { name: 'Warli', href: '/collections/best-sellers/warli' },
-            { name: 'Bloom', href: '/collections/best-sellers/bloom' },
-            { name: 'Zodiac', href: '/collections/best-sellers/zodiac' },
-            { name: 'Aham Brahmasmi', href: '/collections/best-sellers/aham-brahmasmi' },
-            { name: 'Forever More', href: '/collections/best-sellers/forever-more' },
-            { name: 'Bagh E Fiza', href: '/collections/best-sellers/bagh-e-fiza' },
-            { name: 'Fresh Fern', href: '/collections/best-sellers/fresh-fern' },
-          ]
-        },
-        {
-          title: 'TOP PICKS',
-          items: [
-            { name: 'Qasbah', href: '/collections/top-picks/qasbah' },
-            { name: 'Before Sunrise', href: '/collections/top-picks/before-sunrise' },
-            { name: 'Sparkling Elegance', href: '/collections/top-picks/sparkling-elegance' },
-            { name: 'Zulu', href: '/collections/top-picks/zulu' },
-            { name: 'Jewels of Taj', href: '/collections/top-picks/jewels-of-taj' },
-            { name: 'Heer', href: '/collections/top-picks/heer' },
-            { name: 'Nazakat', href: '/collections/top-picks/nazakat' },
-          ]
-        },
-        {
-          title: 'NEW ARRIVALS',
-          items: [
-            { name: 'Tropical Wildlife', href: '/collections/new-arrivals/tropical-wildlife' },
-          ]
-        }
-      ]
-    }
+    hasDropdown: false
   },
 ];
 
@@ -356,7 +220,7 @@ export default function Header() {
                   </Link>
                   
                   {/* Mega Dropdown Menu */}
-                  {item.hasDropdown && openDropdown === item.name && (
+                  {item.hasDropdown && openDropdown === item.name && 'dropdown' in item && (item as any).dropdown && (
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -367,14 +231,14 @@ export default function Header() {
                     >
                       <div className="container mx-auto px-4">
                         <div className={`${item.name === 'GIFT' ? 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'} gap-4 sm:gap-6 lg:gap-8`}>
-                          {item.dropdown?.categories.map((category, index) => (
+                          {(item as any).dropdown.categories.map((category: any, index: number) => (
                             <div key={index} className="space-y-4">
                               <h3 className="text-[#4B006E] text-lg sm:text-xl font-script mb-2 sm:mb-4 border-b border-[#4B006E] pb-1 sm:pb-2">
                                 {category.title}
                               </h3>
                               {category.items.length > 0 ? (
                                 <ul className="space-y-3">
-                                  {category.items.map((subItem, subIndex) => (
+                                  {category.items.map((subItem: any, subIndex: number) => (
                                     <li key={subIndex}>
                         <Link
                                         href={subItem.href}
@@ -508,7 +372,7 @@ export default function Header() {
                 )}
                 
                 {/* Mobile Mega Menu */}
-                {item.hasDropdown && openDropdown === item.name && (
+                {item.hasDropdown && openDropdown === item.name && 'dropdown' in item && (item as any).dropdown && (
                   <motion.div
                     initial={{ opacity: 0, y: 100 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -536,13 +400,13 @@ export default function Header() {
                           </button>
                         </div>
                         <div className="space-y-6">
-                          {item.dropdown?.categories.map((category, index) => (
+                          {(item as any).dropdown.categories.map((category: any, index: number) => (
                             <div key={index} className="space-y-3">
                               <h3 className="text-lg font-bold uppercase tracking-wide text-[#4B006E] border-b border-[#4B006E] pb-2">
                                 {category.title}
                               </h3>
                               <ul className="space-y-2">
-                                {category.items.map((subItem, subIndex) => (
+                                {category.items.map((subItem: any, subIndex: number) => (
                                   <li key={subIndex}>
                                     <Link
                                       href={subItem.href}

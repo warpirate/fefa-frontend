@@ -42,6 +42,13 @@ class WishlistService {
   // Add item to wishlist
   async addToWishlist(productId, variantId = undefined, notes = undefined) {
     try {
+      // Validate productId before sending
+      if (!productId) {
+        throw new Error('Product ID is required');
+      }
+
+      console.log('[WishlistService] Adding to wishlist:', { productId, variantId, notes });
+      
       const response = await fetch(`${this.baseUrl}${this.endpoints.WISHLIST}`, {
         method: 'POST',
         headers: this.getAuthHeaders(),
@@ -53,10 +60,21 @@ class WishlistService {
       });
 
       if (!response.ok) {
+        // Try to get error message from response
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+          console.error('[WishlistService] Error response:', errorData);
+        } catch (e) {
+          // If response is not JSON, use default message
+          console.error('[WishlistService] Could not parse error response');
+        }
+        
         if (response.status === 401) {
           throw new Error('Authentication required');
         }
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();

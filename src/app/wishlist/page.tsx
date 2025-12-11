@@ -142,8 +142,10 @@ export default function WishlistPage() {
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
           >
             <AnimatePresence>
-              {wishlist.items.map((wishlistItem) => {
-                const product = wishlistItem.product;
+              {wishlist.items
+                .filter((wishlistItem) => wishlistItem.product !== null && wishlistItem.product !== undefined)
+                .map((wishlistItem) => {
+                const product = wishlistItem.product!; // Safe to use ! here since we filtered nulls
                 
                 // Handle both object and string array formats for images
                 let imageUrl = '/images/logo.jpg'; // Default fallback

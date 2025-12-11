@@ -230,7 +230,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
 
   const isInWishlist = (productId: string): boolean => {
     if (!wishlist || !wishlist.items) return false;
-    return wishlist.items.some(item => item.product._id === productId);
+    return wishlist.items.some(item => item.product && item.product._id === productId);
   };
 
   const clearError = () => {
