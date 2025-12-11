@@ -685,6 +685,87 @@ class AdminService {
     }
   }
 
+  // Create user (admin)
+  async createUser(userData) {
+    try {
+      const token = localStorage.getItem('fefa_access_token');
+      
+      if (!token) {
+        return {
+          success: false,
+          error: 'Authentication required. Please log in again.',
+          requiresAuth: true
+        };
+      }
+
+      // Try to create user via register endpoint with admin privileges
+      // Note: This assumes the backend supports admin user creation
+      // If backend doesn't support this, you may need to implement a POST /api/users endpoint
+      const response = await fetch(`${this.baseURL}/auth/register-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          email: userData.email,
+          password: userData.password,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          phone: userData.phone,
+          role: userData.role || 'user'
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // Handle token expiration
+        if (response.status === 401) {
+          localStorage.removeItem('fefa_access_token');
+          localStorage.removeItem('fefa_refresh_token');
+          localStorage.removeItem('fefa_user');
+          
+          return {
+            success: false,
+            error: 'Your session has expired. Please log in again.',
+            requiresAuth: true
+          };
+        }
+        
+        throw new Error(data.message || data.error || 'Failed to create user');
+      }
+
+      // If user was created, optionally update role and status if needed
+      if (data.data && data.data.id) {
+        const userId = data.data.id;
+        
+        // Update role and status if different from default
+        if (userData.role !== 'user' || userData.isActive === false) {
+          const updateResult = await this.updateUser(userId, {
+            role: userData.role,
+            isActive: userData.isActive !== false
+          });
+          
+          if (!updateResult.success) {
+            console.warn('User created but failed to update role/status:', updateResult.error);
+          }
+        }
+      }
+
+      return {
+        success: true,
+        data: data.data
+      };
+    } catch (error) {
+      console.error('Create user error:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to create user'
+      };
+    }
+  }
+
   // Update user
   async updateUser(id, userData) {
     try {
