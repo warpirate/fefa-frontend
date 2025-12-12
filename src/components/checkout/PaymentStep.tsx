@@ -135,9 +135,8 @@ export default function PaymentStep() {
             );
 
             if (verifyResponse.success) {
-              // Payment successful - trigger order completion
-              const { processPayment } = await import('../../contexts/CheckoutContext');
-              // This will be handled by ConfirmationStep
+              // Payment successful - redirect to confirmation page
+              // Order completion will be handled by ConfirmationStep
               window.location.href = `/order-confirmation?orderId=${dbOrderId}&paymentId=${response.razorpay_payment_id}`;
             } else {
               alert('Payment verification failed. Please contact support.');
