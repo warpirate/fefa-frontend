@@ -26,7 +26,64 @@ class CheckoutService {
     }
   }
 
-  // Process payment
+  // Create Razorpay order
+  async createRazorpayOrder(amount, orderId) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/payments/create-order`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.getAuthToken()}`
+        },
+        body: JSON.stringify({
+          amount,
+          currency: 'INR',
+          orderId
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to create Razorpay order');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error creating Razorpay order:', error);
+      throw error;
+    }
+  }
+
+  // Verify Razorpay payment
+  async verifyPayment(razorpay_order_id, razorpay_payment_id, razorpay_signature, orderId) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/payments/verify`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.getAuthToken()}`
+        },
+        body: JSON.stringify({
+          razorpay_order_id,
+          razorpay_payment_id,
+          razorpay_signature,
+          orderId
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Payment verification failed');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error verifying payment:', error);
+      throw error;
+    }
+  }
+
+  // Process payment (legacy method - kept for backward compatibility)
   async processPayment(paymentData) {
     try {
       const response = await fetch(`${API_BASE_URL}/payments/process`, {
@@ -252,7 +309,7 @@ class CheckoutService {
   // Get auth token from localStorage
   getAuthToken() {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('authToken');
+      return localStorage.getItem('fefa_access_token') || localStorage.getItem('authToken');
     }
     return null;
   }

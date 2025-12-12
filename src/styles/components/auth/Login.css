@@ -1,13 +1,40 @@
 /* Login.css */
 
-/* Main container */
+/* Main container - Split Screen Layout */
 .login-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, var(--soft-pink-100) 0%, white 50%, var(--soft-pink-200) 100%);
+  display: flex;
+}
+
+/* Left side - Visual/Branding Area */
+.login-visual-side {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .login-visual-side {
+    display: flex;
+    width: 50%;
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, var(--primary) 0%, rgba(75, 0, 110, 0.9) 50%, var(--primary) 100%);
+  }
+}
+
+/* Right side - Login Form Area */
+.login-form-side {
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 1rem;
+  background: linear-gradient(135deg, var(--soft-pink-100) 0%, white 50%, var(--soft-pink-200) 100%);
+}
+
+@media (min-width: 1024px) {
+  .login-form-side {
+    width: 50%;
+  }
 }
 
 /* Background decorative elements */
@@ -285,11 +312,109 @@
   text-decoration: underline;
 }
 
-/* Responsive design */
-@media (max-width: 640px) {
+/* Responsive design - Mobile First Approach */
+
+/* Extra Small Devices (phones, 320px and up) */
+@media (min-width: 320px) {
+  .form-input {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+}
+
+/* Small Devices (landscape phones, 480px and up) */
+@media (min-width: 480px) {
   .login-card {
     padding: 1.5rem;
-    margin: 1rem;
+  }
+  
+  .form-input {
+    padding: 0.75rem 0.875rem 0.75rem 2.75rem;
+    font-size: 1rem;
+  }
+}
+
+/* Medium Devices (tablets, 768px and up) */
+@media (min-width: 768px) {
+  .login-card {
+    padding: 2rem;
+  }
+  
+  .login-title {
+    font-size: 2rem;
+  }
+  
+  .form-input {
+    padding: 0.875rem 1rem 0.875rem 3rem;
+  }
+}
+
+/* Large Devices (desktops, 1024px and up) */
+@media (min-width: 1024px) {
+  .login-visual-side {
+    display: flex;
+    width: 50%;
+  }
+  
+  .login-form-side {
+    width: 50%;
+  }
+}
+
+/* Extra Large Devices (large desktops, 1280px and up) */
+@media (min-width: 1280px) {
+  .login-card {
+    padding: 2.5rem;
+    max-width: 32rem;
+  }
+}
+
+/* 2XL Devices (larger desktops, 1536px and up) */
+@media (min-width: 1536px) {
+  .login-card {
+    max-width: 36rem;
+  }
+}
+
+/* Max-width breakpoints for mobile optimization */
+@media (max-width: 1023px) {
+  .login-container {
+    flex-direction: column;
+  }
+  
+  .login-visual-side {
+    display: none;
+  }
+  
+  .login-form-side {
+    width: 100%;
+    min-height: 100vh;
+  }
+}
+
+/* Tablet Portrait (768px - 1023px) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .login-card {
+    max-width: 32rem;
+  }
+}
+
+/* Mobile Landscape and Small Tablets (640px - 767px) */
+@media (min-width: 640px) and (max-width: 767px) {
+  .login-card {
+    padding: 1.75rem;
+    max-width: 28rem;
+  }
+  
+  .login-title {
+    font-size: 1.75rem;
+  }
+}
+
+/* Small Mobile Devices (max-width: 639px) */
+@media (max-width: 639px) {
+  .login-card {
+    padding: 1.5rem;
+    margin: 0.5rem;
   }
   
   .login-title {
@@ -298,30 +423,79 @@
   
   .form-input {
     padding: 0.75rem 0.875rem 0.75rem 2.75rem;
+    font-size: 16px; /* Prevents zoom on iOS */
   }
   
   .input-icon {
     left: 0.875rem;
+    width: 1.125rem;
+    height: 1.125rem;
   }
   
   .password-toggle {
     right: 0.875rem;
   }
+  
+  .form-label {
+    font-size: 0.8125rem;
+  }
 }
 
-@media (max-width: 480px) {
-  .login-container {
+/* Extra Small Mobile Devices (max-width: 479px) */
+@media (max-width: 479px) {
+  .login-form-side {
     padding: 0.5rem;
   }
   
   .login-card {
     padding: 1rem;
+    margin: 0.25rem;
+    border-radius: 1rem;
+  }
+  
+  .login-title {
+    font-size: 1.375rem;
   }
   
   .checkbox-container {
     flex-direction: column;
     align-items: flex-start;
-    gap: 1rem;
+    gap: 0.75rem;
+  }
+  
+  .form-field {
+    margin-bottom: 1.25rem;
+  }
+  
+  .divider {
+    margin: 1.5rem 0;
+  }
+}
+
+/* Landscape Orientation */
+@media (orientation: landscape) and (max-height: 600px) {
+  .login-form-side {
+    padding: 1rem;
+    min-height: auto;
+  }
+  
+  .login-card {
+    padding: 1.5rem;
+  }
+  
+  .form-field {
+    margin-bottom: 1rem;
+  }
+  
+  .divider {
+    margin: 1rem 0;
+  }
+}
+
+/* High DPI Displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .form-input {
+    border-width: 1.5px;
   }
 }
 
@@ -351,6 +525,46 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* Smooth transitions for all interactive elements */
+.form-input,
+.password-toggle,
+.checkbox,
+.forgot-password-link,
+.signup-link,
+.social-button {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Reduced motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .form-input,
+  .password-toggle,
+  .checkbox,
+  .forgot-password-link,
+  .signup-link {
+    min-height: 44px; /* iOS touch target size */
+  }
+  
+  .password-toggle {
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 }
 

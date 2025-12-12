@@ -5,9 +5,16 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
-import { FiCheck, FiPackage, FiTruck, FiMail, FiDownload, FiHome, FiCreditCard } from 'react-icons/fi';
+import { FiCheck, FiPackage, FiTruck, FiMail, FiDownload, FiHome, FiCreditCard, FiLoader } from 'react-icons/fi';
 import { useCheckout } from '../../contexts/CheckoutContext';
 import { useCart } from '../../contexts/CartContext';
+import checkoutService from '../../services/checkoutService';
+
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
 
 // Helper function to get valid image URL
 const getValidImageUrl = (images: any[] | undefined, fallback: string = '/images/logo.jpg'): string => {
@@ -34,31 +41,141 @@ const getValidImageUrl = (images: any[] | undefined, fallback: string = '/images
 
 export default function ConfirmationStep() {
   const router = useRouter();
-  const { order, processPayment, isProcessing } = useCheckout();
-  const { clearCart } = useCart();
+  const { order, processPayment, isProcessing, paymentMethod } = useCheckout();
+  const { clearCart, subtotal } = useCart();
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [razorpayLoaded, setRazorpayLoaded] = useState(false);
+  const [paymentInitiated, setPaymentInitiated] = useState(false);
 
+  const shipping = subtotal > 5000 ? 0 : 99;
+  const discount = 0;
+  const grandTotal = (order?.total || subtotal + shipping - discount);
+
+  // Load Razorpay script
   useEffect(() => {
-    if (order && !paymentSuccess) {
-      handlePayment();
-    }
-  }, [order]);
+    if (typeof window !== 'undefined' && !window.Razorpay) {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.async = true;
+      script.onload = () => {
+        setRazorpayLoaded(true);
+      };
+      script.onerror = () => {
+        console.error('Failed to load Razorpay script');
+      };
+      document.body.appendChild(script);
 
-  const handlePayment = async () => {
+      return () => {
+        if (document.body.contains(script)) {
+          document.body.removeChild(script);
+        }
+      };
+    } else if (window.Razorpay) {
+      setRazorpayLoaded(true);
+    }
+  }, []);
+
+  // Trigger payment when order is ready and Razorpay is loaded
+  useEffect(() => {
+    if (order && razorpayLoaded && !paymentInitiated && !paymentSuccess) {
+      handleRazorpayPayment();
+    }
+  }, [order, razorpayLoaded, paymentInitiated, paymentSuccess]);
+
+  const handleRazorpayPayment = async () => {
+    if (!order || !razorpayLoaded || !window.Razorpay || paymentInitiated) {
+      return;
+    }
+
+    setPaymentInitiated(true);
     setIsProcessingPayment(true);
+
     try {
-      const success = await processPayment();
-      setPaymentSuccess(success);
-      
-      if (success) {
-        // Clear cart after successful payment
-        clearCart();
+      // Create Razorpay order
+      const dbOrderId = (order as any).dbOrderId || order.id;
+      const razorpayOrderResponse = await checkoutService.createRazorpayOrder(
+        grandTotal,
+        dbOrderId
+      );
+
+      if (!razorpayOrderResponse.success || !razorpayOrderResponse.order) {
+        throw new Error('Failed to create payment order');
       }
-    } catch (error) {
-      console.error('Payment error:', error);
-    } finally {
+
+      const razorpayOrder = razorpayOrderResponse.order;
+      const razorpayKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+
+      if (!razorpayKey) {
+        throw new Error('Razorpay key not configured');
+      }
+
+      // Initialize Razorpay Checkout
+      const options = {
+        key: razorpayKey,
+        amount: razorpayOrder.amount,
+        currency: razorpayOrder.currency || 'INR',
+        name: 'FEFA Jewelry',
+        description: `Order ${order.id}`,
+        order_id: razorpayOrder.id,
+        handler: async function (response: any) {
+          try {
+            // Verify payment
+            const verifyResponse = await checkoutService.verifyPayment(
+              response.razorpay_order_id,
+              response.razorpay_payment_id,
+              response.razorpay_signature,
+              dbOrderId
+            );
+
+            if (verifyResponse.success) {
+              setPaymentSuccess(true);
+              clearCart();
+              // Redirect to order confirmation page
+              router.push(`/order-confirmation?orderId=${dbOrderId}&paymentId=${response.razorpay_payment_id}`);
+            } else {
+              throw new Error(verifyResponse.message || 'Payment verification failed');
+            }
+          } catch (error: any) {
+            console.error('Payment verification error:', error);
+            setIsProcessingPayment(false);
+            setPaymentInitiated(false);
+            alert('Payment verification failed: ' + (error.message || 'Unknown error'));
+          }
+        },
+        prefill: {
+          name: `${order.shippingAddress.firstName} ${order.shippingAddress.lastName}`,
+          email: order.shippingAddress.email,
+          contact: order.shippingAddress.phone,
+        },
+        notes: {
+          order_id: dbOrderId,
+          order_number: order.id,
+        },
+        theme: {
+          color: '#d4a574',
+        },
+        modal: {
+          ondismiss: function() {
+            setIsProcessingPayment(false);
+            setPaymentInitiated(false);
+          }
+        }
+      };
+
+      const razorpay = new window.Razorpay(options);
+      razorpay.on('payment.failed', function (response: any) {
+        setIsProcessingPayment(false);
+        setPaymentInitiated(false);
+        alert('Payment failed: ' + (response.error.description || 'Unknown error'));
+      });
+
+      razorpay.open();
+    } catch (error: any) {
+      console.error('Razorpay payment error:', error);
       setIsProcessingPayment(false);
+      setPaymentInitiated(false);
+      alert('Payment initialization failed: ' + (error.message || 'Unknown error'));
     }
   };
 

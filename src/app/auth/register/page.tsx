@@ -127,7 +127,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="register-container">
+    <div className="register-container min-h-screen flex items-center justify-center p-4 sm:p-6 md:p-8">
       {/* Background decorative elements */}
       <div className="register-background">
         <div className="register-bg-circle-1"></div>
@@ -139,14 +139,14 @@ export default function RegisterPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="relative w-full max-w-4xl"
+        className="relative w-full max-w-4xl mx-auto"
       >
         {/* Register Card */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="register-card"
+          className="register-card w-full"
         >
           {/* Header */}
           <div className="register-header">
@@ -155,8 +155,8 @@ export default function RegisterPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.3 }}
             >
-              <h1 className="register-title">Create Account</h1>
-              <p className="register-subtitle">Join FEFA and discover beautiful jewelry</p>
+              <h1 className="register-title text-2xl sm:text-3xl md:text-4xl lg:text-5xl">Create Account</h1>
+              <p className="register-subtitle text-sm sm:text-base mt-2">Join FEFA and discover beautiful jewelry</p>
             </motion.div>
           </div>
 
@@ -165,13 +165,13 @@ export default function RegisterPage() {
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6"
+              className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 sm:px-4 sm:py-3 rounded-lg mb-4 sm:mb-6 text-sm sm:text-base"
             >
-              <div className="flex items-center">
-                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <div className="flex items-start sm:items-center gap-2">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 mt-0.5 sm:mt-0 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                 </svg>
-                {error}
+                <span className="break-words">{error}</span>
               </div>
             </motion.div>
           )}
@@ -182,10 +182,10 @@ export default function RegisterPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.4 }}
             onSubmit={handleSubmit}
-            className="space-y-6"
+            className="space-y-4 sm:space-y-5 md:space-y-6"
           >
             {/* Name Fields */}
-            <div className="form-grid">
+            <div className="form-grid grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6">
               <div className="form-field">
                 <label htmlFor="firstName" className="form-label">
                   First Name
@@ -376,15 +376,15 @@ export default function RegisterPage() {
 
             {/* Terms and Conditions */}
             <div className="form-field">
-              <div className="checkbox-wrapper">
+              <div className="checkbox-wrapper flex items-start gap-2 sm:gap-3">
                 <input
                   type="checkbox"
                   id="terms"
                   checked={acceptTerms}
                   onChange={(e) => setAcceptTerms(e.target.checked)}
-                  className="checkbox"
+                  className="checkbox mt-1 flex-shrink-0"
                 />
-                <label htmlFor="terms" className="checkbox-label">
+                <label htmlFor="terms" className="checkbox-label text-xs sm:text-sm leading-relaxed">
                   I agree to the{' '}
                   <Link href="/terms" className="terms-link">
                     Terms and Conditions
@@ -473,9 +473,9 @@ export default function RegisterPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.8 }}
-            className="text-center mt-8"
+            className="text-center mt-6 sm:mt-8"
           >
-            <p className="text-dark-gray">
+            <p className="text-dark-gray text-sm sm:text-base">
               Already have an account?{' '}
               <Link
                 href="/auth/login"

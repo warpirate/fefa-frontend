@@ -342,11 +342,6 @@ export default function ProductCard({
               ₹{((comparePrice || originalPrice) as number).toFixed(2)}
             </span>
           )}
-          {discountPercentage && discountPercentage > 0 && (
-            <span className="bg-red-100 text-red-600 text-xs px-1 sm:px-2 py-0.5 sm:py-1 rounded-full">
-              -{discountPercentage}%
-            </span>
-          )}
         </div>
         
         {/* Add to Cart Button */}

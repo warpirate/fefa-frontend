@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
-import { FiMinus, FiPlus, FiHeart, FiShare2, FiStar, FiX } from 'react-icons/fi';
+import { FiMinus, FiPlus, FiHeart, FiStar, FiX } from 'react-icons/fi';
 import MainLayout from '@/components/layout/MainLayout';
 import Button from '@/components/ui/Button';
 import ProductCard from '@/components/product/ProductCard';
@@ -740,20 +740,6 @@ export default function ProductDetail() {
                     </>
                   )}
                 </Button>
-              </div>
-              
-              {/* Share */}
-              <div className="flex flex-col sm:flex-row sm:items-center text-dark-gray gap-2 sm:gap-4">
-                <div className="flex items-center">
-                  <FiShare2 className="w-4 h-4 mr-2" />
-                  <span className="text-sm sm:text-base">Share:</span>
-                </div>
-                <div className="flex space-x-3 sm:space-x-4">
-                  <button className="hover:text-accent transition-colors text-sm sm:text-base px-2 py-1 rounded hover:bg-gray-100">FB</button>
-                  <button className="hover:text-accent transition-colors text-sm sm:text-base px-2 py-1 rounded hover:bg-gray-100">IG</button>
-                  <button className="hover:text-accent transition-colors text-sm sm:text-base px-2 py-1 rounded hover:bg-gray-100">TW</button>
-                  <button className="hover:text-accent transition-colors text-sm sm:text-base px-2 py-1 rounded hover:bg-gray-100">PIN</button>
-                </div>
               </div>
             </motion.div>
           </div>

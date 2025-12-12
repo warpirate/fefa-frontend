@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useCart } from './CartContext';
 import { useAuth } from './AuthContext';
+import checkoutService from '../services/checkoutService';
 
 export interface ShippingAddress {
   firstName: string;
@@ -10,9 +11,12 @@ export interface ShippingAddress {
   email: string;
   phone: string;
   address: string;
+  addressLine1?: string;
+  addressLine2?: string;
   city: string;
   state: string;
   zipCode: string;
+  postalCode?: string;
   country: string;
 }
 
@@ -71,7 +75,7 @@ interface CheckoutContextType {
   prevStep: () => void;
   canProceedToNext: () => boolean;
   createOrder: () => Promise<void>;
-  processPayment: () => Promise<boolean>;
+  processPayment: (razorpayResponse?: any) => Promise<boolean>;
 }
 
 const CheckoutContext = createContext<CheckoutContextType | undefined>(undefined);
@@ -153,44 +157,68 @@ export const CheckoutProvider: React.FC<CheckoutProviderProps> = ({ children }) 
   };
 
   const createOrder = async (): Promise<void> => {
-    if (!cart || !paymentMethod) {
-      throw new Error('Cart or payment method not available');
+    if (!cart || !paymentMethod || !shippingAddress) {
+      throw new Error('Cart, payment method, or shipping address not available');
     }
 
     setIsProcessing(true);
     setError(null);
 
     try {
-      const orderItems: OrderItem[] = cart.items.map(item => ({
-        productId: item.product._id,
-        productName: item.product.name,
-        variantId: item.variant?._id,
-        variantName: item.variant?.name,
-        quantity: item.quantity,
-        price: item.price,
-        total: item.total,
-        image: typeof item.product.images?.[0] === 'string' 
-          ? item.product.images[0] 
-          : item.product.images?.[0]?.url
-      }));
+      // Format shipping address for API
+      const formattedShippingAddress = {
+        firstName: shippingAddress.firstName,
+        lastName: shippingAddress.lastName,
+        addressLine1: shippingAddress.address || shippingAddress.addressLine1 || '',
+        addressLine2: shippingAddress.addressLine2 || '',
+        city: shippingAddress.city,
+        state: shippingAddress.state,
+        postalCode: shippingAddress.zipCode || shippingAddress.postalCode || '',
+        country: shippingAddress.country || 'India',
+        phone: shippingAddress.phone,
+      };
 
-      const shipping = subtotal > 5000 ? 0 : 99;
-      const discount = 0; // You can implement discount logic here
-      const orderTotal = subtotal + shipping - discount;
+      // Create order via API
+      const response = await checkoutService.createOrder({
+        shippingAddress: formattedShippingAddress,
+        billingAddress: formattedShippingAddress, // Using same address for billing
+        paymentMethod: {
+          type: paymentMethod.type,
+        },
+      });
 
+      if (!response.success || !response.order) {
+        throw new Error(response.message || 'Failed to create order');
+      }
+
+      // Map API response to Order interface
       const newOrder: Order = {
-        id: `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        items: orderItems,
+        id: response.order._id || response.order.orderNumber,
+        items: cart.items.map(item => ({
+          productId: item.product._id || item.product,
+          productName: item.product.name,
+          variantId: item.variant?._id || item.variant,
+          variantName: item.variant?.name,
+          quantity: item.quantity,
+          price: item.price,
+          total: item.total,
+          image: typeof item.product.images?.[0] === 'string' 
+            ? item.product.images[0] 
+            : item.product.images?.[0]?.url
+        })),
         shippingAddress,
         paymentMethod,
-        subtotal,
-        discount,
-        shipping,
-        total: orderTotal,
-        status: 'pending',
+        subtotal: response.order.pricing?.subtotal || subtotal,
+        discount: response.order.pricing?.discount || 0,
+        shipping: response.order.pricing?.shipping || (subtotal > 5000 ? 0 : 99),
+        total: response.order.pricing?.total || total,
+        status: response.order.status || 'pending',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
+
+      // Store order ID for payment processing
+      (newOrder as any).dbOrderId = response.order._id;
 
       setOrder(newOrder);
       setCurrentStep(4);
@@ -202,7 +230,7 @@ export const CheckoutProvider: React.FC<CheckoutProviderProps> = ({ children }) 
     }
   };
 
-  const processPayment = async (): Promise<boolean> => {
+  const processPayment = async (razorpayResponse?: any): Promise<boolean> => {
     if (!order || !paymentMethod) {
       throw new Error('Order or payment method not available');
     }
@@ -211,11 +239,25 @@ export const CheckoutProvider: React.FC<CheckoutProviderProps> = ({ children }) 
     setError(null);
 
     try {
-      // Simulate payment processing
-      // In a real app, you would integrate with payment gateway here
+      // If Razorpay response is provided, verify payment
+      if (razorpayResponse) {
+        const dbOrderId = (order as any).dbOrderId || order.id;
+        const verifyResponse = await checkoutService.verifyPayment(
+          razorpayResponse.razorpay_order_id,
+          razorpayResponse.razorpay_payment_id,
+          razorpayResponse.razorpay_signature,
+          dbOrderId
+        );
+
+        if (!verifyResponse.success) {
+          throw new Error(verifyResponse.message || 'Payment verification failed');
+        }
+
+        return true;
+      }
+
+      // Fallback: simulate payment (for testing)
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Simulate payment success (90% success rate)
       const success = Math.random() > 0.1;
       
       if (!success) {
