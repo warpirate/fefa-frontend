@@ -195,9 +195,9 @@ export const CheckoutProvider: React.FC<CheckoutProviderProps> = ({ children }) 
       const newOrder: Order = {
         id: response.order._id || response.order.orderNumber,
         items: cart.items.map(item => ({
-          productId: item.product._id,
+          productId: item.product._id || item.product,
           productName: item.product.name,
-          variantId: item.variant?._id,
+          variantId: item.variant?._id || item.variant,
           variantName: item.variant?.name,
           quantity: item.quantity,
           price: item.price,

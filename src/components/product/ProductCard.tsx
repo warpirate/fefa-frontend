@@ -114,6 +114,20 @@ export default function ProductCard({
       setIsInWishlist(inWishlist);
     }
   }, [_id, id, isAuthenticated, checkIsInWishlist]);
+
+  // Auto-slide images infinitely
+  useEffect(() => {
+    if (!images || images.length <= 1) return;
+    if (isHovered) return; // Pause auto-slide on hover
+
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prevIndex) => {
+        return (prevIndex + 1) % images.length;
+      });
+    }, 3000); // Change image every 3 seconds
+
+    return () => clearInterval(interval);
+  }, [images, isHovered]);
   
   const handleProductClick = () => {
     router.push(`/product/${slug}`);
@@ -136,14 +150,10 @@ export default function ProductCard({
 
   const handleMouseEnter = () => {
     setIsHovered(true);
-    if (images && images.length > 1) {
-      setCurrentImageIndex(1);
-    }
   };
   
   const handleMouseLeave = () => {
     setIsHovered(false);
-    setCurrentImageIndex(0);
   };
 
   const handleImageError = () => {

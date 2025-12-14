@@ -114,24 +114,13 @@ export default function EditModal({ isOpen, onClose, data, onSave, type, loading
     try {
       const result = await adminService.getAllCategories();
       if (result.success) {
-        // Map category names to match the image
-        const categoryNameMap: Record<string, string> = {
-          'Necklaces': 'NECK SET',
-          'Earrings': 'EARRINGS',
-          'Rings': 'FINGER RINGS',
-          'Bangles': 'BANGLES',
-          'Bracelets': 'BRACELETS',
-          'Chains': 'CHAINS'
-        };
-        
-        // Filter and map only the categories shown in the image
-        const allowedCategories = ['Necklaces', 'Earrings', 'Rings', 'Bangles', 'Bracelets', 'Chains'];
+        // Filter only the categories that should be shown
+        const allowedCategories = ['NECK SET', 'NECKSETS', 'EARRINGS', 'FINGER RINGS', 'BANGLES', 'BRACELETS', 'CHAINS'];
         const filteredCategories = result.data
-          .filter((cat: any) => allowedCategories.includes(cat.name))
-          .map((cat: any) => ({
-            ...cat,
-            name: categoryNameMap[cat.name] || cat.name
-          }));
+          .filter((cat: any) => {
+            const catNameUpper = cat.name.toUpperCase().trim();
+            return allowedCategories.some(allowed => allowed.toUpperCase() === catNameUpper);
+          });
         
         setCategories(filteredCategories);
       }

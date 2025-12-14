@@ -39,9 +39,10 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
   const [imagePreviews, setImagePreviews] = useState<Array<{ file: File; preview: string }>>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Load categories when modal opens
+  // Load categories when modal opens - always reload to ensure fresh data
   useEffect(() => {
     if (isOpen) {
+      // Always reload categories when modal opens to ensure they're available
       loadCategories();
     }
   }, [isOpen]);
@@ -50,24 +51,13 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
     try {
       const result = await adminService.getAllCategories();
       if (result.success) {
-        // Map category names to match the image
-        const categoryNameMap: Record<string, string> = {
-          'Necklaces': 'NECK SET',
-          'Earrings': 'EARRINGS',
-          'Rings': 'FINGER RINGS',
-          'Bangles': 'BANGLES',
-          'Bracelets': 'BRACELETS',
-          'Chains': 'CHAINS'
-        };
-        
-        // Filter and map only the categories shown in the image
-        const allowedCategories = ['Necklaces', 'Earrings', 'Rings', 'Bangles', 'Bracelets', 'Chains'];
+        // Filter only the categories that should be shown
+        const allowedCategories = ['NECK SET', 'NECKSETS', 'EARRINGS', 'FINGER RINGS', 'BANGLES', 'BRACELETS', 'CHAINS'];
         const filteredCategories = result.data
-          .filter((cat: any) => allowedCategories.includes(cat.name))
-          .map((cat: any) => ({
-            ...cat,
-            name: categoryNameMap[cat.name] || cat.name
-          }));
+          .filter((cat: any) => {
+            const catNameUpper = cat.name.toUpperCase().trim();
+            return allowedCategories.some(allowed => allowed.toUpperCase() === catNameUpper);
+          });
         
         setCategories(filteredCategories);
       }
@@ -282,9 +272,11 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
       const result = await (adminService as any).createProductWithImage(formDataToSend);
       
       if (result.success) {
+        // Reload categories to ensure they're still available
+        await loadCategories();
+        resetForm();
         onSuccess();
         onClose();
-        resetForm();
         alert('Product created successfully!');
       } else {
         // Handle authentication errors
