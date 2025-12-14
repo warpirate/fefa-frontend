@@ -195,16 +195,18 @@ export const CheckoutProvider: React.FC<CheckoutProviderProps> = ({ children }) 
       const newOrder: Order = {
         id: response.order._id || response.order.orderNumber,
         items: cart.items.map(item => ({
-          productId: item.product._id || item.product,
-          productName: item.product.name,
-          variantId: item.variant?._id || item.variant,
-          variantName: item.variant?.name,
+          productId: typeof item.product === 'string' ? item.product : item.product._id,
+          productName: typeof item.product === 'string' ? '' : item.product.name,
+          variantId: item.variant ? (typeof item.variant === 'string' ? item.variant : item.variant._id) : undefined,
+          variantName: item.variant && typeof item.variant !== 'string' ? item.variant.name : undefined,
           quantity: item.quantity,
           price: item.price,
           total: item.total,
-          image: typeof item.product.images?.[0] === 'string' 
-            ? item.product.images[0] 
-            : item.product.images?.[0]?.url
+          image: typeof item.product === 'string' 
+            ? undefined 
+            : (typeof item.product.images?.[0] === 'string' 
+              ? item.product.images[0] 
+              : item.product.images?.[0]?.url)
         })),
         shippingAddress,
         paymentMethod,
