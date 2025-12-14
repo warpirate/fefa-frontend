@@ -13,7 +13,10 @@ import {
   MdStar as Star,
   MdAttachMoney as DollarSign,
   MdRefresh as Refresh,
-  MdError as ErrorIcon
+  MdError as ErrorIcon,
+  MdCheckCircle as CheckCircle,
+  MdCancel as Cancel,
+  MdBugReport as BugReport
 } from 'react-icons/md';
 import adminService from '../../../services/adminService';
 import ViewModal from '../../../components/admin/ViewModal';
@@ -39,6 +42,11 @@ export default function ProductsPage() {
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [editLoading, setEditLoading] = useState(false);
+  
+  // Test panel state
+  const [showTestPanel, setShowTestPanel] = useState(false);
+  const [testResults, setTestResults] = useState<Record<string, any>>({});
+  const [testing, setTesting] = useState<Record<string, boolean>>({});
 
   // Load products and categories on component mount
   useEffect(() => {

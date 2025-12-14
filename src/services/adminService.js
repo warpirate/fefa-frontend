@@ -258,7 +258,27 @@ class AdminService {
         body: formData
       });
 
-      const data = await response.json();
+      // Handle network errors (CORS, connection issues, etc.)
+      if (!response.ok && response.status === 0) {
+        return {
+          success: false,
+          error: 'Network error: Unable to connect to server. Please check your connection and try again.',
+          requiresAuth: false
+        };
+      }
+
+      // Try to parse JSON response
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        // If response is not JSON, it's likely a network/CORS error
+        return {
+          success: false,
+          error: `Server error (${response.status}): ${response.statusText}. Please check if CORS is configured correctly.`,
+          requiresAuth: false
+        };
+      }
 
       if (!response.ok) {
         // Handle token expiration
@@ -274,8 +294,26 @@ class AdminService {
             requiresAuth: true
           };
         }
+
+        // Handle 403 Forbidden (not admin)
+        if (response.status === 403) {
+          return {
+            success: false,
+            error: 'Access denied. Admin privileges required.',
+            requiresAuth: false
+          };
+        }
+
+        // Handle validation errors (400)
+        if (response.status === 400) {
+          return {
+            success: false,
+            error: data.message || data.error || 'Validation error. Please check your input.',
+            requiresAuth: false
+          };
+        }
         
-        throw new Error(data.message || data.error || 'Failed to create product');
+        throw new Error(data.message || data.error || `Failed to create product (${response.status})`);
       }
 
       return {
@@ -284,6 +322,16 @@ class AdminService {
       };
     } catch (error) {
       console.error('Create product with image error:', error);
+      
+      // Handle fetch errors (network, CORS, etc.)
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        return {
+          success: false,
+          error: 'Network error: Unable to reach server. Please check your connection and CORS configuration.',
+          requiresAuth: false
+        };
+      }
+      
       return {
         success: false,
         error: error.message || 'Failed to create product'

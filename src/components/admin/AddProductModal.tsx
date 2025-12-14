@@ -51,15 +51,10 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
     try {
       const result = await adminService.getAllCategories();
       if (result.success) {
-        // Filter only the categories that should be shown
-        const allowedCategories = ['NECK SET', 'NECKSETS', 'EARRINGS', 'FINGER RINGS', 'BANGLES', 'BRACELETS', 'CHAINS'];
-        const filteredCategories = result.data
-          .filter((cat: any) => {
-            const catNameUpper = cat.name.toUpperCase().trim();
-            return allowedCategories.some(allowed => allowed.toUpperCase() === catNameUpper);
-          });
-        
-        setCategories(filteredCategories);
+        // Show ALL categories returned from API (admin view shows all)
+        // No filtering needed since adminService.getAllCategories() already handles admin=true
+        console.log('Loaded categories:', result.data.map((cat: any) => ({ name: cat.name, isActive: cat.isActive })));
+        setCategories(result.data);
       }
     } catch (err) {
       console.error('Error loading categories:', err);
