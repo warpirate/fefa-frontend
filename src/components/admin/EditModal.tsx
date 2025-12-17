@@ -116,10 +116,11 @@ export default function EditModal({ isOpen, onClose, data, onSave, type, loading
       if (result.success) {
         // Show ALL categories returned from API (admin view shows all)
         // No filtering needed since adminService.getAllCategories() already handles admin=true
+        console.log('Loaded categories:', result.data.map((cat: any) => ({ name: cat.name, isActive: cat.isActive })));
         setCategories(result.data);
       }
     } catch (err) {
-      // Error loading categories - silent fail
+      console.error('Error loading categories:', err);
     }
   };
 
@@ -183,6 +184,7 @@ export default function EditModal({ isOpen, onClose, data, onSave, type, loading
       fileArray.forEach((file) => {
         // Validate file type
         if (!file.type.startsWith('image/')) {
+          console.error('Invalid file type:', file.type);
           errorCount++;
           if (loadedCount + errorCount === fileArray.length) {
             alert(`Some files were skipped. Please select only image files.`);
@@ -192,6 +194,7 @@ export default function EditModal({ isOpen, onClose, data, onSave, type, loading
 
         // Validate file size (10MB max)
         if (file.size > 10 * 1024 * 1024) {
+          console.error('File too large:', file.name, file.size);
           errorCount++;
           if (loadedCount + errorCount === fileArray.length) {
             alert(`Some files were skipped. Maximum file size is 10MB.`);
@@ -200,7 +203,8 @@ export default function EditModal({ isOpen, onClose, data, onSave, type, loading
         }
 
         const reader = new FileReader();
-        reader.onerror = () => {
+        reader.onerror = (error) => {
+          console.error('FileReader error:', error);
           errorCount++;
           if (loadedCount + errorCount === fileArray.length) {
             if (newImages.length === 0) {
@@ -225,6 +229,7 @@ export default function EditModal({ isOpen, onClose, data, onSave, type, loading
               }
             }
           } else {
+            console.error('Invalid preview result');
             errorCount++;
           }
         };
@@ -249,6 +254,13 @@ export default function EditModal({ isOpen, onClose, data, onSave, type, loading
   };
 
   const handleImageError = (url: string) => {
+    console.error('Image failed to load:', url);
+    console.error('Image error details:', {
+      url,
+      isValidUrl: isValidImageUrl(url),
+      urlType: typeof url,
+      urlLength: url?.length
+    });
     setFailedImageUrls(prev => new Set(prev).add(url));
   };
 
@@ -508,7 +520,8 @@ export default function EditModal({ isOpen, onClose, data, onSave, type, loading
                           src={img.url}
                           alt={`Product image ${index + 1}`}
                           className="w-full h-full object-cover bg-white"
-                          onError={() => {
+                          onError={(e) => {
+                            console.error('Image load error event:', e);
                             handleImageError(img.url);
                           }}
                           onLoad={(e) => {
@@ -568,6 +581,7 @@ export default function EditModal({ isOpen, onClose, data, onSave, type, loading
                         alt={`New product image ${index + 1}`}
                         className="w-full h-full object-cover bg-white"
                         onError={(e) => {
+                          console.error('Preview image failed to load:', imageData.preview?.substring(0, 50));
                           e.currentTarget.style.display = 'none';
                         }}
                         onLoad={(e) => {

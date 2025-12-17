@@ -158,9 +158,6 @@ export default function ProductDetail() {
           if (productId) {
             await fetchReviews(productId);
           }
-          // Load related products (only if we have the product)
-          const productsData = await loadCollectionsProductsData();
-          setProducts(productsData);
         } else {
           // Fallback to loading all products
           const productsData = await loadCollectionsProductsData();
@@ -174,8 +171,12 @@ export default function ProductDetail() {
             await fetchReviews(productId);
           }
         }
+        
+        // Load related products
+        const productsData = await loadCollectionsProductsData();
+        setProducts(productsData);
       } catch (error) {
-        // Error loading product data - silent fail
+        console.error('Error loading product data:', error);
       } finally {
         setIsLoading(false);
       }

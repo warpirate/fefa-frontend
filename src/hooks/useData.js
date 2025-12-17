@@ -105,8 +105,7 @@ export const useData = () => {
   // Load data on mount
   useEffect(() => {
     loadAllData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadAllData]);
 
   return {
     data,

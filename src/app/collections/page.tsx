@@ -120,7 +120,7 @@ function CollectionsContent() {
         // Load products with current filters
         // Note: loadFilteredProducts will be called by useEffect when selectedCategories changes
       } catch (error) {
-        // Error loading collections data - silent fail
+        console.error('Error loading collections data:', error);
       } finally {
         setIsLoading(false);
       }
@@ -155,6 +155,7 @@ function CollectionsContent() {
       setProducts(result.data);
       setPagination(result.pagination);
     } catch (error) {
+      console.error('Error loading filtered products:', error);
       // Fallback to JSON data
       const productsData = await loadCollectionsProductsData();
       setProducts(productsData);

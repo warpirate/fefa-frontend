@@ -53,10 +53,11 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
       if (result.success) {
         // Show ALL categories returned from API (admin view shows all)
         // No filtering needed since adminService.getAllCategories() already handles admin=true
+        console.log('Loaded categories:', result.data.map((cat: any) => ({ name: cat.name, isActive: cat.isActive })));
         setCategories(result.data);
       }
     } catch (err) {
-      // Error loading categories - silent fail, categories may still be available
+      console.error('Error loading categories:', err);
     }
   };
 
@@ -104,6 +105,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
       fileArray.forEach((file) => {
         // Validate file type
         if (!file.type.startsWith('image/')) {
+          console.error('Invalid file type:', file.type);
           errorCount++;
           if (loadedCount + errorCount === fileArray.length) {
             alert(`Some files were skipped. Please select only image files.`);
@@ -113,6 +115,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
 
         // Validate file size (10MB max)
         if (file.size > 10 * 1024 * 1024) {
+          console.error('File too large:', file.name, file.size);
           errorCount++;
           if (loadedCount + errorCount === fileArray.length) {
             alert(`Some files were skipped. Maximum file size is 10MB.`);
@@ -121,7 +124,8 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
         }
 
         const reader = new FileReader();
-        reader.onerror = () => {
+        reader.onerror = (error) => {
+          console.error('FileReader error:', error);
           errorCount++;
           if (loadedCount + errorCount === fileArray.length) {
             if (newImages.length === 0) {
@@ -146,6 +150,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
               }
             }
           } else {
+            console.error('Invalid preview result');
             errorCount++;
           }
         };
@@ -237,18 +242,20 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
         };
       }
 
-      // Create FormData for file upload - optimized
+      // Create FormData for file upload
       const formDataToSend = new FormData();
       
-      // Add all product data - simplified logic
+      // Add all product data as JSON string (backend will parse it)
       Object.keys(productData).forEach(key => {
-        const value = productData[key];
         if (key.includes('.')) {
-          formDataToSend.append(key, String(value));
-        } else if (Array.isArray(value) || (typeof value === 'object' && value !== null)) {
-          formDataToSend.append(key, JSON.stringify(value));
+          // Handle nested fields like 'inventory.quantity'
+          formDataToSend.append(key, productData[key].toString());
+        } else if (Array.isArray(productData[key])) {
+          formDataToSend.append(key, JSON.stringify(productData[key]));
+        } else if (typeof productData[key] === 'object') {
+          formDataToSend.append(key, JSON.stringify(productData[key]));
         } else {
-          formDataToSend.append(key, String(value));
+          formDataToSend.append(key, productData[key].toString());
         }
       });
 
@@ -260,6 +267,8 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
       const result = await (adminService as any).createProductWithImage(formDataToSend);
       
       if (result.success) {
+        // Reload categories to ensure they're still available
+        await loadCategories();
         resetForm();
         onSuccess();
         onClose();
@@ -278,6 +287,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
         }
       }
     } catch (err) {
+      console.error('Error creating product:', err);
       alert('Failed to create product: ' + (err instanceof Error ? err.message : 'Unknown error'));
     } finally {
       setLoading(false);

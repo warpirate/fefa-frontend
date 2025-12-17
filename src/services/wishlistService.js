@@ -34,7 +34,7 @@ class WishlistService {
       const data = await response.json();
       return data;
     } catch (error) {
-      // Error('Failed to fetch wishlist:', error);
+      console.error('Failed to fetch wishlist:', error);
       throw error;
     }
   }
@@ -47,7 +47,7 @@ class WishlistService {
         throw new Error('Product ID is required');
       }
 
-      // Log('[WishlistService] Adding to wishlist:', { productId, variantId, notes });
+      console.log('[WishlistService] Adding to wishlist:', { productId, variantId, notes });
       
       const response = await fetch(`${this.baseUrl}${this.endpoints.WISHLIST}`, {
         method: 'POST',
@@ -65,10 +65,10 @@ class WishlistService {
         try {
           const errorData = await response.json();
           errorMessage = errorData.message || errorData.error || errorMessage;
-          // Error('[WishlistService] Error response:', errorData);
+          console.error('[WishlistService] Error response:', errorData);
         } catch (e) {
           // If response is not JSON, use default message
-          // Error('[WishlistService] Could not parse error response');
+          console.error('[WishlistService] Could not parse error response');
         }
         
         if (response.status === 401) {
@@ -80,7 +80,7 @@ class WishlistService {
       const data = await response.json();
       return data;
     } catch (error) {
-      // Error('Failed to add to wishlist:', error);
+      console.error('Failed to add to wishlist:', error);
       throw error;
     }
   }
@@ -104,7 +104,7 @@ class WishlistService {
       const data = await response.json();
       return data;
     } catch (error) {
-      // Error('Failed to update wishlist item:', error);
+      console.error('Failed to update wishlist item:', error);
       throw error;
     }
   }
@@ -127,7 +127,7 @@ class WishlistService {
       const data = await response.json();
       return data;
     } catch (error) {
-      // Error('Failed to remove from wishlist:', error);
+      console.error('Failed to remove from wishlist:', error);
       throw error;
     }
   }
@@ -150,7 +150,7 @@ class WishlistService {
       const data = await response.json();
       return data;
     } catch (error) {
-      // Error('Failed to clear wishlist:', error);
+      console.error('Failed to clear wishlist:', error);
       throw error;
     }
   }
@@ -174,7 +174,7 @@ class WishlistService {
       const data = await response.json();
       return data;
     } catch (error) {
-      // Error('Failed to move to cart:', error);
+      console.error('Failed to move to cart:', error);
       throw error;
     }
   }
@@ -189,7 +189,7 @@ class WishlistService {
       }
       return false;
     } catch (error) {
-      // Error('Failed to check wishlist status:', error);
+      console.error('Failed to check wishlist status:', error);
       return false;
     }
   }
@@ -210,7 +210,7 @@ class WishlistService {
         items: []
       };
     } catch (error) {
-      // Error('Failed to get wishlist summary:', error);
+      console.error('Failed to get wishlist summary:', error);
       return {
         itemCount: 0,
         items: []

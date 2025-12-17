@@ -36,7 +36,7 @@ class ReviewService {
       const data = await response.json();
       return data;
     } catch (error) {
-      // Error('Failed to fetch product reviews:', error);
+      console.error('Failed to fetch product reviews:', error);
       throw error;
     }
   }
@@ -60,7 +60,7 @@ class ReviewService {
       const data = await response.json();
       return data;
     } catch (error) {
-      // Error('Failed to create review:', error);
+      console.error('Failed to create review:', error);
       throw error;
     }
   }
@@ -84,7 +84,7 @@ class ReviewService {
       const data = await response.json();
       return data;
     } catch (error) {
-      // Error('Failed to update review:', error);
+      console.error('Failed to update review:', error);
       throw error;
     }
   }
@@ -107,7 +107,7 @@ class ReviewService {
       const data = await response.json();
       return data;
     } catch (error) {
-      // Error('Failed to delete review:', error);
+      console.error('Failed to delete review:', error);
       throw error;
     }
   }
@@ -130,7 +130,7 @@ class ReviewService {
       const data = await response.json();
       return data;
     } catch (error) {
-      // Error('Failed to mark review as helpful:', error);
+      console.error('Failed to mark review as helpful:', error);
       throw error;
     }
   }
@@ -153,7 +153,7 @@ class ReviewService {
       const data = await response.json();
       return data;
     } catch (error) {
-      // Error('Failed to remove helpful mark:', error);
+      console.error('Failed to remove helpful mark:', error);
       throw error;
     }
   }

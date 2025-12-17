@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, memo } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -74,7 +74,7 @@ interface ProductCardProps {
   };
 }
 
-function ProductCard({
+export default function ProductCard({
   _id,
   id,
   name,
@@ -172,8 +172,10 @@ function ProductCard({
 
     try {
       const productId = _id || id;
+      console.log('[ProductCard] Toggling wishlist:', { _id, id, productId });
       
       if (!productId) {
+        console.error('[ProductCard] No product ID available');
         setNotificationMessage('Product ID not found');
         setShowNotification(true);
         setTimeout(() => setShowNotification(false), 2000);
@@ -193,6 +195,7 @@ function ProductCard({
       setShowNotification(true);
       setTimeout(() => setShowNotification(false), 2000);
     } catch (error: any) {
+      console.error('Error toggling wishlist:', error);
       const errorMessage = error.message || 'Failed to update wishlist';
       setNotificationMessage(errorMessage);
       setShowNotification(true);
@@ -230,6 +233,7 @@ function ProductCard({
         setShowNotification(false);
       }, 2000);
     } catch (error: any) {
+      console.error('Error adding to cart:', error);
       setNotificationMessage(error.message || 'Failed to add to cart');
       setShowNotification(true);
       setTimeout(() => setShowNotification(false), 3000);
@@ -391,5 +395,3 @@ function ProductCard({
     </motion.div>
   );
 }
-
-export default memo(ProductCard);

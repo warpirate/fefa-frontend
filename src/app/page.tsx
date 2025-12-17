@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
 import Button from '@/components/ui/Button';
@@ -83,13 +83,13 @@ export default function Home() {
     return [];
   };
 
-  // Ensure arrays are not null and are actually arrays - memoized to prevent recalculation
-  const safeCarouselItems = useMemo(() => getSafeArray(carousel), [carousel]);
-  const safeJewelryCategories = useMemo(() => getSafeArray(categories), [categories]);
-  const safeFeatures = useMemo(() => getSafeArray(features), [features]);
-  const safeProducts = useMemo(() => getSafeArray(products), [products]);
-  const safeTrendingLooks = useMemo(() => getSafeArray(trending), [trending]);
-  const safeTestimonials = useMemo(() => getSafeArray(testimonials), [testimonials]);
+  // Ensure arrays are not null and are actually arrays
+  const safeCarouselItems = getSafeArray(carousel);
+  const safeJewelryCategories = getSafeArray(categories);
+  const safeFeatures = getSafeArray(features);
+  const safeProducts = getSafeArray(products);
+  const safeTrendingLooks = getSafeArray(trending);
+  const safeTestimonials = getSafeArray(testimonials);
 
   // Auto-advance carousel
   useEffect(() => {
