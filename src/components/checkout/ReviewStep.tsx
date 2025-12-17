@@ -45,7 +45,7 @@ export default function ReviewStep() {
     try {
       await createOrder();
     } catch (error) {
-      console.error('Error creating order:', error);
+      // Error creating order - handled by createOrder
     } finally {
       setIsCreatingOrder(false);
     }

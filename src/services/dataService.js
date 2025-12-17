@@ -9,18 +9,29 @@ import {
   loadCollectionsProductsData
 } from '../utils/dataLoader';
 import { API_HELPERS } from '../config/api';
+import browserCache from '../utils/browserCache';
 
 class DataService {
   constructor() {
     // API integration - carousel and categories from backend only, others with local fallback
   }
 
-  // Data endpoints - Carousel only from backend API
+  // Data endpoints - Carousel only from backend API (with browser cache)
   async getCarousel() {
+    // Check browser cache first
+    const cacheKey = 'carousel_data';
+    const cached = browserCache.get(cacheKey);
+    if (cached) {
+      return cached; // Instant return from cache
+    }
+
     try {
       const apiResponse = await API_HELPERS.getActiveBanners();
       if (apiResponse.success && apiResponse.data) {
-        return { success: true, data: apiResponse.data };
+        const result = { success: true, data: apiResponse.data };
+        // Cache for 5 minutes
+        browserCache.set(cacheKey, result, 300);
+        return result;
       } else {
         return { 
           success: false, 
@@ -30,7 +41,7 @@ class DataService {
         };
       }
     } catch (apiError) {
-      console.error('Failed to load carousel data from API:', apiError);
+      // Error('Failed to load carousel data from API:', apiError);
       return { 
         success: false, 
         error: 'Failed to load carousel data from API',
@@ -55,7 +66,7 @@ class DataService {
         };
       }
     } catch (apiError) {
-      console.error('Failed to load categories data from API:', apiError);
+      // Error('Failed to load categories data from API:', apiError);
       return { 
         success: false, 
         error: 'Failed to load categories data from API',
@@ -70,7 +81,7 @@ class DataService {
       const localData = await loadCollectionsCategoriesData();
       return { success: true, data: localData };
     } catch (error) {
-      console.error('Failed to load collections categories data:', error);
+      // Error('Failed to load collections categories data:', error);
       return { success: false, error: 'Failed to load collections categories data from local files' };
     }
   }
@@ -80,7 +91,7 @@ class DataService {
       const localData = await loadCollectionsOccasionsData();
       return { success: true, data: localData };
     } catch (error) {
-      console.error('Failed to load collections occasions data:', error);
+      // Error('Failed to load collections occasions data:', error);
       return { success: false, error: 'Failed to load collections occasions data from local files' };
     }
   }
@@ -90,7 +101,7 @@ class DataService {
       const localData = await loadCollectionsProductsData();
       return { success: true, data: localData };
     } catch (error) {
-      console.error('Failed to load collections products data:', error);
+      // Error('Failed to load collections products data:', error);
       return { success: false, error: 'Failed to load collections products data from local files' };
     }
   }
@@ -100,7 +111,7 @@ class DataService {
       const localData = await loadFeaturesData();
       return { success: true, data: localData };
     } catch (error) {
-      console.error('Failed to load features data:', error);
+      // Error('Failed to load features data:', error);
       return { success: false, error: 'Failed to load features data from local files' };
     }
   }
@@ -113,7 +124,7 @@ class DataService {
         return { success: true, data: apiResponse.data };
       }
     } catch (apiError) {
-      console.warn('API call failed, falling back to local data:', apiError);
+      // API call failed, falling back to local data
     }
     
     // Fallback to local data
@@ -121,7 +132,7 @@ class DataService {
       const localData = await loadProductsData();
       return { success: true, data: localData };
     } catch (error) {
-      console.error('Failed to load products data:', error);
+      // Error('Failed to load products data:', error);
       return { success: false, error: 'Failed to load products data from both API and local files' };
     }
   }
@@ -136,7 +147,7 @@ class DataService {
         return { success: true, data: featuredProducts };
       }
     } catch (apiError) {
-      console.warn('API call failed, falling back to local data:', apiError);
+      // API call failed, falling back to local data
     }
     
     // Fallback to local data - filter featured products
@@ -147,7 +158,7 @@ class DataService {
         : [];
       return { success: true, data: featuredProducts };
     } catch (error) {
-      console.error('Failed to load featured products data:', error);
+      // Error('Failed to load featured products data:', error);
       return { success: false, error: 'Failed to load featured products data from both API and local files' };
     }
   }
@@ -157,7 +168,7 @@ class DataService {
       const localData = await loadStylesData();
       return { success: true, data: localData };
     } catch (error) {
-      console.error('Failed to load styles data:', error);
+      // Error('Failed to load styles data:', error);
       return { success: false, error: 'Failed to load styles data from local files' };
     }
   }
@@ -167,7 +178,7 @@ class DataService {
       const localData = await loadTestimonialsData();
       return { success: true, data: localData };
     } catch (error) {
-      console.error('Failed to load testimonials data:', error);
+      // Error('Failed to load testimonials data:', error);
       return { success: false, error: 'Failed to load testimonials data from local files' };
     }
   }
@@ -177,7 +188,7 @@ class DataService {
       const localData = await loadTrendingData();
       return { success: true, data: localData };
     } catch (error) {
-      console.error('Failed to load trending data:', error);
+      // Error('Failed to load trending data:', error);
       return { success: false, error: 'Failed to load trending data from local files' };
     }
   }
@@ -225,7 +236,7 @@ class DataService {
         }
       };
     } catch (error) {
-      console.error('Failed to fetch all data:', error);
+      // Error('Failed to fetch all data:', error);
       return { success: false, error: error.message };
     }
   }

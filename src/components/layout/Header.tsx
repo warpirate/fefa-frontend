@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
@@ -94,7 +94,7 @@ export default function Header() {
         setProducts(productsData);
         setCategories(categoriesData);
       } catch (error) {
-        console.error('Error loading suggestions data:', error);
+        // Error loading suggestions data - silent fail
       } finally {
         setIsLoadingSuggestions(false);
       }
@@ -117,11 +117,32 @@ export default function Header() {
     }
   };
 
-  const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Debounce search input to reduce re-renders
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const handleSearchInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchInput(value);
-    setShowSuggestions(value.length >= 1);
-  };
+    
+    // Clear previous timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    
+    // Show suggestions after debounce delay
+    debounceTimerRef.current = setTimeout(() => {
+      setShowSuggestions(value.length >= 1);
+    }, 150); // 150ms debounce
+  }, []);
+  
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
 
   const handleSuggestionClick = (suggestion: string) => {
     setSearchInput(suggestion);

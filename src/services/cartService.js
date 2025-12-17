@@ -34,7 +34,7 @@ class CartService {
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error('Failed to fetch cart:', error);
+      // Error('Failed to fetch cart:', error);
       throw error;
     }
   }
@@ -62,7 +62,7 @@ class CartService {
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error('Failed to add to cart:', error);
+      // Error('Failed to add to cart:', error);
       throw error;
     }
   }
@@ -86,7 +86,7 @@ class CartService {
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error('Failed to update cart item:', error);
+      // Error('Failed to update cart item:', error);
       throw error;
     }
   }
@@ -109,7 +109,7 @@ class CartService {
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error('Failed to remove from cart:', error);
+      // Error('Failed to remove from cart:', error);
       throw error;
     }
   }
@@ -132,7 +132,7 @@ class CartService {
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error('Failed to clear cart:', error);
+      // Error('Failed to clear cart:', error);
       throw error;
     }
   }
@@ -159,7 +159,7 @@ class CartService {
         currency: 'INR'
       };
     } catch (error) {
-      console.error('Failed to get cart summary:', error);
+      // Error('Failed to get cart summary:', error);
       return {
         itemCount: 0,
         totalQuantity: 0,

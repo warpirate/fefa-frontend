@@ -44,7 +44,6 @@ class AdminService {
         data: stats
       };
     } catch (error) {
-      console.error('Get dashboard stats error:', error);
       return {
         success: false,
         error: error.message || 'Failed to fetch dashboard statistics'
@@ -71,7 +70,7 @@ class AdminService {
         data: data.data || []
       };
     } catch (error) {
-      console.error('Get recent orders error:', error);
+      // Error('Get recent orders error:', error);
       return {
         success: false,
         error: error.message || 'Failed to fetch recent orders'
@@ -98,7 +97,7 @@ class AdminService {
         data: data.data || []
       };
     } catch (error) {
-      console.error('Get recent users error:', error);
+      // Error('Get recent users error:', error);
       return {
         success: false,
         error: error.message || 'Failed to fetch recent users'
@@ -147,7 +146,7 @@ class AdminService {
         pagination: data.pagination
       };
     } catch (error) {
-      console.error('Get all products error:', error);
+      // Error('Get all products error:', error);
       return {
         success: false,
         error: error.message || 'Failed to fetch products'
@@ -174,7 +173,7 @@ class AdminService {
         data: data.data
       };
     } catch (error) {
-      console.error('Get product by ID error:', error);
+      // Error('Get product by ID error:', error);
       return {
         success: false,
         error: error.message || 'Failed to fetch product'
@@ -226,7 +225,7 @@ class AdminService {
         data: data.data
       };
     } catch (error) {
-      console.error('Create product error:', error);
+      // Error('Create product error:', error);
       return {
         success: false,
         error: error.message || 'Failed to create product'
@@ -321,7 +320,7 @@ class AdminService {
         data: data.data
       };
     } catch (error) {
-      console.error('Create product with image error:', error);
+      // Error('Create product with image error:', error);
       
       // Handle fetch errors (network, CORS, etc.)
       if (error.name === 'TypeError' && error.message.includes('fetch')) {
@@ -355,7 +354,7 @@ class AdminService {
       const data = await response.json();
 
       if (!response.ok) {
-        console.error('Product update failed:', {
+        // Error('Product update failed:', {
           status: response.status,
           statusText: response.statusText,
           data: data
@@ -369,7 +368,7 @@ class AdminService {
         data: data.data
       };
     } catch (error) {
-      console.error('Product update error:', error);
+      // Error('Product update error:', error);
       return {
         success: false,
         error: error.message || 'Failed to update product'
@@ -428,7 +427,7 @@ class AdminService {
         data: data.data
       };
     } catch (error) {
-      console.error('Add product images error:', error);
+      // Error('Add product images error:', error);
       return {
         success: false,
         error: error.message || 'Failed to add images'
@@ -455,7 +454,7 @@ class AdminService {
         message: data.message || 'Product deleted successfully'
       };
     } catch (error) {
-      console.error('Delete product error:', error);
+      // Error('Delete product error:', error);
       return {
         success: false,
         error: error.message || 'Failed to delete product'
@@ -502,7 +501,7 @@ class AdminService {
         pagination: data.pagination
       };
     } catch (error) {
-      console.error('Get all categories error:', error);
+      // Error('Get all categories error:', error);
       return {
         success: false,
         error: error.message || 'Failed to fetch categories'
@@ -529,7 +528,7 @@ class AdminService {
         data: data.data
       };
     } catch (error) {
-      console.error('Get category by ID error:', error);
+      // Error('Get category by ID error:', error);
       return {
         success: false,
         error: error.message || 'Failed to fetch category'
@@ -575,7 +574,7 @@ class AdminService {
         data: data.data
       };
     } catch (error) {
-      console.error('Create category error:', error);
+      // Error('Create category error:', error);
       return {
         success: false,
         error: error.message || 'Failed to create category'
@@ -613,7 +612,7 @@ class AdminService {
             error: data.message || 'Authentication required'
           };
         }
-        console.error('Category update failed:', {
+        // Error('Category update failed:', {
           status: response.status,
           statusText: response.statusText,
           data: data
@@ -626,7 +625,7 @@ class AdminService {
         data: data.data
       };
     } catch (error) {
-      console.error('Update category error:', error);
+      // Error('Update category error:', error);
       return {
         success: false,
         error: error.message || 'Failed to update category'
@@ -653,7 +652,7 @@ class AdminService {
         message: data.message || 'Category deleted successfully'
       };
     } catch (error) {
-      console.error('Delete category error:', error);
+      // Error('Delete category error:', error);
       return {
         success: false,
         error: error.message || 'Failed to delete category'
@@ -698,7 +697,7 @@ class AdminService {
         pagination: data.pagination
       };
     } catch (error) {
-      console.error('Get all users error:', error);
+      // Error('Get all users error:', error);
       return {
         success: false,
         error: error.message || 'Failed to fetch users'
@@ -725,7 +724,7 @@ class AdminService {
         data: data.data
       };
     } catch (error) {
-      console.error('Get user by ID error:', error);
+      // Error('Get user by ID error:', error);
       return {
         success: false,
         error: error.message || 'Failed to fetch user'
@@ -796,7 +795,7 @@ class AdminService {
           });
           
           if (!updateResult.success) {
-            console.warn('User created but failed to update role/status:', updateResult.error);
+            // Warning('User created but failed to update role/status:', updateResult.error);
           }
         }
       }
@@ -806,7 +805,7 @@ class AdminService {
         data: data.data
       };
     } catch (error) {
-      console.error('Create user error:', error);
+      // Error('Create user error:', error);
       return {
         success: false,
         error: error.message || 'Failed to create user'
@@ -826,7 +825,7 @@ class AdminService {
       const data = await response.json();
 
       if (!response.ok) {
-        console.error('User update failed:', {
+        // Error('User update failed:', {
           status: response.status,
           statusText: response.statusText,
           data: data
@@ -839,7 +838,7 @@ class AdminService {
         data: data.data
       };
     } catch (error) {
-      console.error('Update user error:', error);
+      // Error('Update user error:', error);
       return {
         success: false,
         error: error.message || 'Failed to update user'
@@ -866,7 +865,7 @@ class AdminService {
         message: data.message || 'User deleted successfully'
       };
     } catch (error) {
-      console.error('Delete user error:', error);
+      // Error('Delete user error:', error);
       return {
         success: false,
         error: error.message || 'Failed to delete user'
@@ -911,7 +910,7 @@ class AdminService {
         totalRevenue: data.totalRevenue || 0
       };
     } catch (error) {
-      console.error('Get all orders error:', error);
+      // Error('Get all orders error:', error);
       return {
         success: false,
         error: error.message || 'Failed to fetch orders'
@@ -960,7 +959,7 @@ class AdminService {
         activeBanners: data.activeBanners || 0
       };
     } catch (error) {
-      console.error('Get all banners error:', error);
+      // Error('Get all banners error:', error);
       return {
         success: false,
         error: error.message || 'Failed to fetch banners'

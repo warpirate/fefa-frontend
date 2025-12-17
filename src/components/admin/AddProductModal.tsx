@@ -237,20 +237,18 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
         };
       }
 
-      // Create FormData for file upload
+      // Create FormData for file upload - optimized
       const formDataToSend = new FormData();
       
-      // Add all product data as JSON string (backend will parse it)
+      // Add all product data - simplified logic
       Object.keys(productData).forEach(key => {
+        const value = productData[key];
         if (key.includes('.')) {
-          // Handle nested fields like 'inventory.quantity'
-          formDataToSend.append(key, productData[key].toString());
-        } else if (Array.isArray(productData[key])) {
-          formDataToSend.append(key, JSON.stringify(productData[key]));
-        } else if (typeof productData[key] === 'object') {
-          formDataToSend.append(key, JSON.stringify(productData[key]));
+          formDataToSend.append(key, String(value));
+        } else if (Array.isArray(value) || (typeof value === 'object' && value !== null)) {
+          formDataToSend.append(key, JSON.stringify(value));
         } else {
-          formDataToSend.append(key, productData[key].toString());
+          formDataToSend.append(key, String(value));
         }
       });
 

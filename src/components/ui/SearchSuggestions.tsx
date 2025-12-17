@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { FiSearch, FiTag, FiTrendingUp, FiStar, FiArrowRight } from 'react-icons/fi';
@@ -47,79 +47,90 @@ export default function SearchSuggestions({
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  // Generate categorized suggestions based on search term
-  const categorizedSuggestions: CategorizedSuggestions = {
-    suggestions: [],
-    products: [],
-    pages: []
-  };
+  // Generate categorized suggestions based on search term - memoized for performance
+  const categorizedSuggestions: CategorizedSuggestions = useMemo(() => {
+    const result: CategorizedSuggestions = {
+      suggestions: [],
+      products: [],
+      pages: []
+    };
 
-  if (searchTerm.length >= 1) {
-    const searchLower = searchTerm.toLowerCase();
-    
-    // Generate category suggestions (left column)
-    const categorySuggestions = categories
-      .filter(category => 
-        category.name.toLowerCase().includes(searchLower) &&
-        category.value !== 'all'
-      )
-      .slice(0, 4)
-      .map(category => ({
-        text: category.name,
-        type: 'category' as const,
-        icon: <FiTag className="w-4 h-4" />,
-        priority: category.name.toLowerCase() === searchLower ? 1 : 2,
-        isExactMatch: category.name.toLowerCase() === searchLower
-      }));
+    if (searchTerm.length >= 1) {
+      const searchLower = searchTerm.toLowerCase();
+      
+      // Generate category suggestions - optimized: cache toLowerCase() calls
+      const categorySuggestions = categories
+        .map(category => ({
+          category,
+          nameLower: category.name.toLowerCase()
+        }))
+        .filter(({ nameLower, category }) => 
+          nameLower.includes(searchLower) && category.value !== 'all'
+        )
+        .slice(0, 4)
+        .map(({ category, nameLower }) => ({
+          text: category.name,
+          type: 'category' as const,
+          icon: <FiTag className="w-4 h-4" />,
+          priority: nameLower === searchLower ? 1 : 2,
+          isExactMatch: nameLower === searchLower
+        }));
 
-    // Generate product suggestions (right column)
-    const productSuggestions = products
-      .filter(product => 
-        product.name.toLowerCase().includes(searchLower) ||
-        (typeof product.category === 'string' 
-          ? product.category.toLowerCase().includes(searchLower)
-          : product.category.name.toLowerCase().includes(searchLower))
-      )
-      .slice(0, 3)
-      .map(product => ({
-        text: product.name,
-        type: 'product' as const,
-        icon: <FiSearch className="w-4 h-4" />,
-        priority: product.name.toLowerCase() === searchLower ? 1 : 2,
-        isExactMatch: product.name.toLowerCase() === searchLower,
-        image: product.images?.[0]?.url || '/images/product-1.png',
-        price: product.price
-      }));
+      // Generate product suggestions - optimized: cache toLowerCase() calls
+      const productSuggestions = products
+        .map(product => ({
+          product,
+          nameLower: product.name.toLowerCase(),
+          categoryLower: typeof product.category === 'string' 
+            ? product.category.toLowerCase()
+            : product.category?.name?.toLowerCase() || ''
+        }))
+        .filter(({ nameLower, categoryLower }) => 
+          nameLower.includes(searchLower) || categoryLower.includes(searchLower)
+        )
+        .slice(0, 3)
+        .map(({ product, nameLower }) => ({
+          text: product.name,
+          type: 'product' as const,
+          icon: <FiSearch className="w-4 h-4" />,
+          priority: nameLower === searchLower ? 1 : 2,
+          isExactMatch: nameLower === searchLower,
+          image: product.images?.[0]?.url || '/images/product-1.png',
+          price: product.price
+        }));
 
-    // Generate page suggestions (left column)
-    const pageSuggestions = [
-      {
-        text: `Types of ${searchTerm.charAt(0).toUpperCase() + searchTerm.slice(1)}`,
-        type: 'page' as const,
-        icon: <FiSearch className="w-4 h-4" />,
-        priority: 3,
-        isExactMatch: false
-      },
-      {
-        text: `How to ${searchTerm.charAt(0).toUpperCase() + searchTerm.slice(1)}`,
-        type: 'page' as const,
-        icon: <FiSearch className="w-4 h-4" />,
-        priority: 3,
-        isExactMatch: false
-      }
-    ].slice(0, 2);
+      // Generate page suggestions (left column)
+      const pageSuggestions = [
+        {
+          text: `Types of ${searchTerm.charAt(0).toUpperCase() + searchTerm.slice(1)}`,
+          type: 'page' as const,
+          icon: <FiSearch className="w-4 h-4" />,
+          priority: 3,
+          isExactMatch: false
+        },
+        {
+          text: `How to ${searchTerm.charAt(0).toUpperCase() + searchTerm.slice(1)}`,
+          type: 'page' as const,
+          icon: <FiSearch className="w-4 h-4" />,
+          priority: 3,
+          isExactMatch: false
+        }
+      ].slice(0, 2);
 
-    categorizedSuggestions.suggestions = categorySuggestions;
-    categorizedSuggestions.products = productSuggestions;
-    categorizedSuggestions.pages = pageSuggestions;
-  }
+      result.suggestions = categorySuggestions;
+      result.products = productSuggestions;
+      result.pages = pageSuggestions;
+    }
+
+    return result;
+  }, [searchTerm, categories, products]);
 
   // Flatten all suggestions for keyboard navigation
-  const allSuggestions = [
+  const allSuggestions = useMemo(() => [
     ...categorizedSuggestions.suggestions,
     ...categorizedSuggestions.products,
     ...categorizedSuggestions.pages
-  ];
+  ], [categorizedSuggestions]);
 
   // Handle keyboard navigation
   useEffect(() => {

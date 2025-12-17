@@ -21,7 +21,7 @@ class CheckoutService {
 
       return await response.json();
     } catch (error) {
-      console.error('Error creating order:', error);
+      // Error('Error creating order:', error);
       throw error;
     }
   }
@@ -49,7 +49,7 @@ class CheckoutService {
 
       return await response.json();
     } catch (error) {
-      console.error('Error creating Razorpay order:', error);
+      // Error('Error creating Razorpay order:', error);
       throw error;
     }
   }
@@ -78,7 +78,7 @@ class CheckoutService {
 
       return await response.json();
     } catch (error) {
-      console.error('Error verifying payment:', error);
+      // Error('Error verifying payment:', error);
       throw error;
     }
   }
@@ -102,7 +102,7 @@ class CheckoutService {
 
       return await response.json();
     } catch (error) {
-      console.error('Error processing payment:', error);
+      // Error('Error processing payment:', error);
       throw error;
     }
   }
@@ -123,7 +123,7 @@ class CheckoutService {
 
       return await response.json();
     } catch (error) {
-      console.error('Error fetching order:', error);
+      // Error('Error fetching order:', error);
       throw error;
     }
   }
@@ -144,7 +144,7 @@ class CheckoutService {
 
       return await response.json();
     } catch (error) {
-      console.error('Error fetching user orders:', error);
+      // Error('Error fetching user orders:', error);
       throw error;
     }
   }
@@ -168,7 +168,7 @@ class CheckoutService {
 
       return await response.json();
     } catch (error) {
-      console.error('Error updating order status:', error);
+      // Error('Error updating order status:', error);
       throw error;
     }
   }
@@ -190,7 +190,7 @@ class CheckoutService {
 
       return await response.json();
     } catch (error) {
-      console.error('Error sending confirmation email:', error);
+      // Error('Error sending confirmation email:', error);
       throw error;
     }
   }
@@ -213,7 +213,7 @@ class CheckoutService {
 
       return await response.json();
     } catch (error) {
-      console.error('Error validating address:', error);
+      // Error('Error validating address:', error);
       throw error;
     }
   }
@@ -236,7 +236,7 @@ class CheckoutService {
 
       return await response.json();
     } catch (error) {
-      console.error('Error calculating shipping:', error);
+      // Error('Error calculating shipping:', error);
       throw error;
     }
   }
@@ -260,7 +260,7 @@ class CheckoutService {
 
       return await response.json();
     } catch (error) {
-      console.error('Error applying coupon:', error);
+      // Error('Error applying coupon:', error);
       throw error;
     }
   }
@@ -277,7 +277,7 @@ class CheckoutService {
 
       return await response.json();
     } catch (error) {
-      console.error('Error fetching payment methods:', error);
+      // Error('Error fetching payment methods:', error);
       throw error;
     }
   }

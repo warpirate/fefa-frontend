@@ -10,7 +10,7 @@ async function loadJsonData<T>(path: string): Promise<T> {
     }
     return await response.json();
   } catch (error) {
-    console.error(`Error loading data from ${path}:`, error);
+    // Error loading data - silent fail
     throw error;
   }
 }
@@ -29,12 +29,12 @@ async function loadDataWithFallback<T>(
     }
     return response;
   } catch (error) {
-    console.warn('API call failed, falling back to JSON data:', error);
+      // API call failed, falling back to JSON data
     try {
       // Fallback to JSON
       return await loadJsonData<T>(jsonPath);
     } catch (jsonError) {
-      console.error('Both API and JSON fallback failed:', jsonError);
+        // Both API and JSON fallback failed
       throw jsonError;
     }
   }
@@ -127,7 +127,7 @@ export const loadProductsWithFilters = async (params: {
     const result = await response.json();
     return result;
   } catch (error) {
-    console.error('Failed to fetch products with filters:', error);
+    // Failed to fetch products with filters - using fallback
     // Fallback to JSON data
     const products = await loadJsonData<Product[]>('/data/collections-products.json');
     return {
@@ -157,7 +157,7 @@ export const loadProductBySlug = async (slug: string): Promise<Product | null> =
     const result = await response.json();
     return result.data;
   } catch (error) {
-    console.error('Failed to fetch product by slug:', error);
+    // Failed to fetch product by slug - using fallback
     // Fallback to JSON data
     const products = await loadJsonData<Product[]>('/data/collections-products.json');
     return products.find(p => p.slug === slug) || null;
@@ -204,7 +204,7 @@ export const searchProducts = async (query: string, params?: {
     const result = await response.json();
     return result;
   } catch (error) {
-    console.error('Failed to search products:', error);
+    // Failed to search products - using fallback
     // Fallback to JSON data with client-side search
     const products = await loadJsonData<Product[]>('/data/collections-products.json');
     const filteredProducts = products.filter(product => 

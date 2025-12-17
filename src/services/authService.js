@@ -47,7 +47,7 @@ class AuthService {
 
       return data.data;
     } catch (error) {
-      console.error('Registration error:', error);
+      // Error('Registration error:', error);
       throw error;
     }
   }
@@ -71,7 +71,7 @@ class AuthService {
 
       return data.data;
     } catch (error) {
-      console.error('Login error:', error);
+      // Error('Login error:', error);
       throw error;
     }
   }
@@ -95,7 +95,7 @@ class AuthService {
 
       return data.data;
     } catch (error) {
-      console.error('Get profile error:', error);
+      // Error('Get profile error:', error);
       throw error;
     }
   }
@@ -120,7 +120,7 @@ class AuthService {
 
       return data.data;
     } catch (error) {
-      console.error('Update profile error:', error);
+      // Error('Update profile error:', error);
       throw error;
     }
   }
@@ -153,7 +153,7 @@ class AuthService {
       
       return { message: 'Logout successful' };
     } catch (error) {
-      console.error('Logout error:', error);
+      // Error('Logout error:', error);
       // Clear tokens even if request fails
       this.clearTokens();
       return { message: 'Logout successful' };
@@ -179,7 +179,7 @@ class AuthService {
 
       return data;
     } catch (error) {
-      console.error('Password reset request error:', error);
+      // Error('Password reset request error:', error);
       throw error;
     }
   }
@@ -203,7 +203,7 @@ class AuthService {
 
       return data;
     } catch (error) {
-      console.error('Password reset error:', error);
+      // Error('Password reset error:', error);
       throw error;
     }
   }
@@ -222,7 +222,7 @@ class AuthService {
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
         const textResponse = await response.text();
-        console.error('Non-JSON response received:', textResponse);
+        // Error('Non-JSON response received:', textResponse);
         throw new Error(`Server returned non-JSON response: ${textResponse.substring(0, 100)}...`);
       }
 
@@ -234,7 +234,7 @@ class AuthService {
 
       return data.data;
     } catch (error) {
-      console.error('Google authentication error:', error);
+      // Error('Google authentication error:', error);
       throw error;
     }
   }
@@ -282,7 +282,7 @@ class AuthService {
 
       return data.data;
     } catch (error) {
-      console.error('Add address error:', error);
+      // Error('Add address error:', error);
       throw error;
     }
   }
@@ -306,7 +306,7 @@ class AuthService {
 
       return data.data;
     } catch (error) {
-      console.error('Update address error:', error);
+      // Error('Update address error:', error);
       throw error;
     }
   }
@@ -329,7 +329,7 @@ class AuthService {
 
       return data;
     } catch (error) {
-      console.error('Delete address error:', error);
+      // Error('Delete address error:', error);
       throw error;
     }
   }
@@ -370,7 +370,7 @@ class AuthService {
       this.storeTokens(response.tokens.accessToken, response.tokens.refreshToken);
       return response.tokens.accessToken;
     } catch (error) {
-      console.error('Token refresh failed:', error);
+      // Error('Token refresh failed:', error);
       this.clearTokens();
       return null;
     }

@@ -34,7 +34,7 @@ class BannerService {
         data: data.data || []
       };
     } catch (error) {
-      console.error('Get all banners error:', error);
+      // Error('Get all banners error:', error);
       return {
         success: false,
         error: error.message || 'Failed to fetch banners'
@@ -61,7 +61,7 @@ class BannerService {
         data: data.data || []
       };
     } catch (error) {
-      console.error('Get active banners error:', error);
+      // Error('Get active banners error:', error);
       return {
         success: false,
         error: error.message || 'Failed to fetch active banners'
@@ -88,7 +88,7 @@ class BannerService {
         data: data.data
       };
     } catch (error) {
-      console.error('Get banner by ID error:', error);
+      // Error('Get banner by ID error:', error);
       return {
         success: false,
         error: error.message || 'Failed to fetch banner'
@@ -116,7 +116,7 @@ class BannerService {
         data: data.data
       };
     } catch (error) {
-      console.error('Create banner error:', error);
+      // Error('Create banner error:', error);
       return {
         success: false,
         error: error.message || 'Failed to create banner'
@@ -162,7 +162,7 @@ class BannerService {
         data: data.data
       };
     } catch (error) {
-      console.error('Update banner error:', error);
+      // Error('Update banner error:', error);
       return {
         success: false,
         error: error.message || 'Failed to update banner'
@@ -189,7 +189,7 @@ class BannerService {
         message: data.message || 'Banner deleted successfully'
       };
     } catch (error) {
-      console.error('Delete banner error:', error);
+      // Error('Delete banner error:', error);
       return {
         success: false,
         error: error.message || 'Failed to delete banner'
@@ -216,7 +216,7 @@ class BannerService {
         message: data.message || 'Click tracked successfully'
       };
     } catch (error) {
-      console.error('Track click error:', error);
+      // Error('Track click error:', error);
       return {
         success: false,
         error: error.message || 'Failed to track click'
@@ -243,7 +243,7 @@ class BannerService {
         message: data.message || 'Impression tracked successfully'
       };
     } catch (error) {
-      console.error('Track impression error:', error);
+      // Error('Track impression error:', error);
       return {
         success: false,
         error: error.message || 'Failed to track impression'

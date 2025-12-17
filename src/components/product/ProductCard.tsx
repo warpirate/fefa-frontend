@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -74,7 +74,7 @@ interface ProductCardProps {
   };
 }
 
-export default function ProductCard({
+function ProductCard({
   _id,
   id,
   name,
@@ -391,3 +391,5 @@ export default function ProductCard({
     </motion.div>
   );
 }
+
+export default memo(ProductCard);
