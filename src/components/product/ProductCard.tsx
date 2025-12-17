@@ -172,10 +172,8 @@ export default function ProductCard({
 
     try {
       const productId = _id || id;
-      console.log('[ProductCard] Toggling wishlist:', { _id, id, productId });
       
       if (!productId) {
-        console.error('[ProductCard] No product ID available');
         setNotificationMessage('Product ID not found');
         setShowNotification(true);
         setTimeout(() => setShowNotification(false), 2000);
@@ -195,7 +193,6 @@ export default function ProductCard({
       setShowNotification(true);
       setTimeout(() => setShowNotification(false), 2000);
     } catch (error: any) {
-      console.error('Error toggling wishlist:', error);
       const errorMessage = error.message || 'Failed to update wishlist';
       setNotificationMessage(errorMessage);
       setShowNotification(true);
@@ -233,7 +230,6 @@ export default function ProductCard({
         setShowNotification(false);
       }, 2000);
     } catch (error: any) {
-      console.error('Error adding to cart:', error);
       setNotificationMessage(error.message || 'Failed to add to cart');
       setShowNotification(true);
       setTimeout(() => setShowNotification(false), 3000);
