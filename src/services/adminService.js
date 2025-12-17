@@ -354,12 +354,6 @@ class AdminService {
       const data = await response.json();
 
       if (!response.ok) {
-        // Error('Product update failed:', {
-          status: response.status,
-          statusText: response.statusText,
-          data: data
-        });
-        
         throw new Error(data.message || `Failed to update product (${response.status})`);
       }
 
@@ -612,11 +606,6 @@ class AdminService {
             error: data.message || 'Authentication required'
           };
         }
-        // Error('Category update failed:', {
-          status: response.status,
-          statusText: response.statusText,
-          data: data
-        });
         throw new Error(data.message || `Failed to update category (${response.status})`);
       }
 
@@ -825,11 +814,6 @@ class AdminService {
       const data = await response.json();
 
       if (!response.ok) {
-        // Error('User update failed:', {
-          status: response.status,
-          statusText: response.statusText,
-          data: data
-        });
         throw new Error(data.message || `Failed to update user (${response.status})`);
       }
 
