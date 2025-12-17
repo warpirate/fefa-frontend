@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
@@ -14,6 +14,7 @@ import { useWishlist } from '@/contexts/WishlistContext';
 import { loadCollectionsProductsData, loadProductBySlug } from '@/utils/dataLoader';
 import { Product } from '@/types/data';
 import reviewService from '@/services/reviewService';
+import '@/styles/components/product/ProductCard.css';
 
 // Type definitions
 interface PincodeResult {
@@ -127,6 +128,15 @@ export default function ProductDetail() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
+  // Zoom state
+  const [isZoomed, setIsZoomed] = useState(false);
+  const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [previewPosition, setPreviewPosition] = useState<'right' | 'left'>('right');
+  const [isHovered, setIsHovered] = useState(false);
+  const imageContainerRef = useRef<HTMLDivElement>(null);
+  const imageSectionRef = useRef<HTMLDivElement>(null);
+  
   // Function to fetch reviews for the product
   const fetchReviews = async (productId: string) => {
     try {
@@ -184,6 +194,52 @@ export default function ProductDetail() {
 
     loadData();
   }, [slug]);
+
+  // Handle window resize to update preview position
+  useEffect(() => {
+    const handleResize = () => {
+      if (isZoomed && isHovered && imageContainerRef.current && imageSectionRef.current) {
+        // Recalculate preview position on resize
+        const section = imageSectionRef.current;
+        const sectionRect = section.getBoundingClientRect();
+        const spaceOnRight = window.innerWidth - sectionRect.right;
+        const spaceOnLeft = sectionRect.left;
+        
+        const viewportWidth = window.innerWidth;
+        
+        // Responsive preview width based on screen size
+        let previewWidth = 450;
+        if (viewportWidth >= 1920) {
+          previewWidth = 550;
+        } else if (viewportWidth >= 1440) {
+          previewWidth = 500;
+        } else if (viewportWidth >= 1280) {
+          previewWidth = 450;
+        } else if (viewportWidth >= 1025) {
+          previewWidth = 400;
+        } else if (viewportWidth >= 901) {
+          previewWidth = 380;
+        } else if (viewportWidth >= 768) {
+          previewWidth = 320;
+        }
+        
+        // Determine best position for preview
+        if (spaceOnRight < previewWidth + 20 && spaceOnLeft > previewWidth + 20) {
+          setPreviewPosition('left');
+        } else if (spaceOnRight >= previewWidth + 20) {
+          setPreviewPosition('right');
+        } else if (spaceOnLeft >= previewWidth + 20) {
+          setPreviewPosition('left');
+        } else {
+          // If both sides are tight, use the side with more space
+          setPreviewPosition(spaceOnRight > spaceOnLeft ? 'right' : 'left');
+        }
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isZoomed, isHovered]);
   
   // Get related products (excluding current product)
   const relatedProducts = products
@@ -443,6 +499,139 @@ export default function ProductDetail() {
     return { status: 'available', message: `${stock} in stock` };
   };
 
+  // Zoom handlers
+  const handleMouseEnter = () => {
+    setIsHovered(true);
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+    setIsZoomed(false);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!imageContainerRef.current || !imageSectionRef.current) return;
+    
+    const container = imageContainerRef.current;
+    const section = imageSectionRef.current;
+    const rect = container.getBoundingClientRect();
+    const sectionRect = section.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    // Calculate percentage position (0-100)
+    const percentX = (x / rect.width) * 100;
+    const percentY = (y / rect.height) * 100;
+    
+    // Clamp values between 0 and 100
+    const clampedX = Math.max(0, Math.min(100, percentX));
+    const clampedY = Math.max(0, Math.min(100, percentY));
+    
+    // Determine preview position based on available space and screen size
+    const spaceOnRight = window.innerWidth - sectionRect.right;
+    const spaceOnLeft = sectionRect.left;
+    const viewportWidth = window.innerWidth;
+    
+    // Responsive preview width based on screen size
+    let previewWidth = 450; // Default for desktop
+    if (viewportWidth >= 1920) {
+      previewWidth = 550;
+    } else if (viewportWidth >= 1440) {
+      previewWidth = 500;
+    } else if (viewportWidth >= 1280) {
+      previewWidth = 450;
+    } else if (viewportWidth >= 1025) {
+      previewWidth = 400;
+    } else if (viewportWidth >= 901) {
+      previewWidth = 380;
+    } else if (viewportWidth >= 768) {
+      previewWidth = 320;
+    }
+    
+    // On very small screens, don't show preview if it won't fit
+    if (viewportWidth < 768) {
+      // Mobile - preview is hidden via CSS
+      return;
+    }
+    
+    // Determine best position for preview
+    // If neither side has enough space, prefer right but adjust
+    if (spaceOnRight < previewWidth + 20 && spaceOnLeft > previewWidth + 20) {
+      setPreviewPosition('left');
+    } else if (spaceOnRight >= previewWidth + 20) {
+      setPreviewPosition('right');
+    } else if (spaceOnLeft >= previewWidth + 20) {
+      setPreviewPosition('left');
+    } else {
+      // If both sides are tight, use the side with more space
+      setPreviewPosition(spaceOnRight > spaceOnLeft ? 'right' : 'left');
+    }
+    
+    setMousePosition({ x, y });
+    setZoomPosition({ x: clampedX, y: clampedY });
+    setIsZoomed(true);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!imageContainerRef.current) return;
+    
+    e.preventDefault(); // Prevent scrolling while zooming
+    
+    const container = imageContainerRef.current;
+    const rect = container.getBoundingClientRect();
+    const touch = e.touches[0];
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+    
+    // Calculate percentage position (0-100)
+    const percentX = (x / rect.width) * 100;
+    const percentY = (y / rect.height) * 100;
+    
+    // Clamp values between 0 and 100
+    const clampedX = Math.max(0, Math.min(100, percentX));
+    const clampedY = Math.max(0, Math.min(100, percentY));
+    
+    setMousePosition({ x, y });
+    setZoomPosition({ x: clampedX, y: clampedY });
+    setIsZoomed(true);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    // Initialize zoom on touch start
+    if (!imageContainerRef.current) return;
+    
+    const container = imageContainerRef.current;
+    const rect = container.getBoundingClientRect();
+    const touch = e.touches[0];
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+    
+    const percentX = (x / rect.width) * 100;
+    const percentY = (y / rect.height) * 100;
+    
+    setMousePosition({ x, y });
+    setZoomPosition({ 
+      x: Math.max(0, Math.min(100, percentX)), 
+      y: Math.max(0, Math.min(100, percentY)) 
+    });
+    setIsZoomed(true);
+  };
+
+  const handleTouchEnd = () => {
+    setIsZoomed(false);
+  };
+
+  // Helper function to get image URL
+  const getImageUrl = (image: any): string | any => {
+    if (typeof image === 'string') {
+      return imageMap[image] || image;
+    }
+    if (typeof image === 'object' && 'url' in image) {
+      return image.url;
+    }
+    return image;
+  };
+
   // Loading component
   if (isLoading) {
     return (
@@ -480,21 +669,65 @@ export default function ProductDetail() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12">
           {/* Product Images */}
-          <div className="order-1 lg:order-1">
-            <div className="relative aspect-square bg-soft-pink-100 rounded-lg sm:rounded-xl overflow-hidden mb-4 sm:mb-6">
+          <div ref={imageSectionRef} className="order-1 lg:order-1">
+            <div 
+              ref={imageContainerRef}
+              className="relative aspect-square bg-soft-pink-100 rounded-lg sm:rounded-xl overflow-visible mb-4 sm:mb-6 cursor-zoom-in product-image-zoom-container"
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
+              onMouseMove={handleMouseMove}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
               {product.images && product.images.length > 0 ? (
-                <Image
-                  src={typeof product.images[activeImageIndex] === 'string' 
-                    ? (imageMap[product.images[activeImageIndex]] || product.images[activeImageIndex])
-                    : (product.images[activeImageIndex] as any).url || product.images[activeImageIndex]
-                  }
-                  alt={product.name}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 40vw"
-                />
+                <>
+                  <div className="relative w-full h-full overflow-hidden rounded-lg sm:rounded-xl">
+                    <Image
+                      src={getImageUrl(product.images[activeImageIndex])}
+                      alt={product.name}
+                      fill
+                      className={`object-cover transition-transform duration-700 ease-in-out ${
+                        isZoomed ? 'product-image-zoomed' : ''
+                      }`}
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 40vw"
+                      style={{
+                        transformOrigin: `${zoomPosition.x}% ${zoomPosition.y}%`,
+                      }}
+                    />
+                  </div>
+                  {/* Zoom Lens */}
+                  {isZoomed && isHovered && (
+                    <div 
+                      className="product-zoom-lens"
+                      style={{
+                        left: `${mousePosition.x}px`,
+                        top: `${mousePosition.y}px`,
+                        display: 'block',
+                      }}
+                    />
+                  )}
+                  {/* Zoomed Preview */}
+                  {isZoomed && isHovered && (
+                    <div 
+                      className={`product-zoom-preview product-zoom-preview-${previewPosition}`}
+                      style={{ display: 'block' }}
+                    >
+                      <div 
+                        className="product-zoom-preview-image"
+                        style={{
+                          backgroundImage: `url(${(() => {
+                            const imgUrl = getImageUrl(product.images[activeImageIndex]);
+                            return typeof imgUrl === 'string' ? imgUrl : (imgUrl as any).src || '';
+                          })()})`,
+                          backgroundPosition: `${zoomPosition.x}% ${zoomPosition.y}%`,
+                        }}
+                      />
+                    </div>
+                  )}
+                </>
               ) : (
-                <div className="w-full h-full bg-soft-pink-100 flex items-center justify-center">
+                <div className="w-full h-full bg-soft-pink-100 flex items-center justify-center rounded-lg sm:rounded-xl">
                   <span className="text-primary font-script text-2xl sm:text-3xl lg:text-4xl">{product.name.charAt(0)}</span>
                 </div>
               )}

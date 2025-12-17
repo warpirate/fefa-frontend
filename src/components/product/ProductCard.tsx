@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -105,6 +105,10 @@ export default function ProductCard({
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [showNotification, setShowNotification] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState('');
+  const [isZoomed, setIsZoomed] = useState(false);
+  const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
+  const imageContainerRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
   
   // Check if product is in wishlist on mount and when product changes
   useEffect(() => {
@@ -154,6 +158,52 @@ export default function ProductCard({
   
   const handleMouseLeave = () => {
     setIsHovered(false);
+    setIsZoomed(false);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!imageContainerRef.current) return;
+    
+    const container = imageContainerRef.current;
+    const rect = container.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    // Calculate percentage position (0-100)
+    const percentX = (x / rect.width) * 100;
+    const percentY = (y / rect.height) * 100;
+    
+    // Clamp values between 0 and 100
+    const clampedX = Math.max(0, Math.min(100, percentX));
+    const clampedY = Math.max(0, Math.min(100, percentY));
+    
+    setZoomPosition({ x: clampedX, y: clampedY });
+    setIsZoomed(true);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!imageContainerRef.current) return;
+    
+    const container = imageContainerRef.current;
+    const rect = container.getBoundingClientRect();
+    const touch = e.touches[0];
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+    
+    // Calculate percentage position (0-100)
+    const percentX = (x / rect.width) * 100;
+    const percentY = (y / rect.height) * 100;
+    
+    // Clamp values between 0 and 100
+    const clampedX = Math.max(0, Math.min(100, percentX));
+    const clampedY = Math.max(0, Math.min(100, percentY));
+    
+    setZoomPosition({ x: clampedX, y: clampedY });
+    setIsZoomed(true);
+  };
+
+  const handleTouchEnd = () => {
+    setIsZoomed(false);
   };
 
   const handleImageError = () => {
@@ -244,34 +294,46 @@ export default function ProductCard({
 
   return (
     <motion.div
+      ref={cardRef}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
-      className="group relative bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100"
+      className="group relative bg-white dark:bg-[#1F2937] rounded-xl shadow-lg dark:shadow-gray-900/50 hover:shadow-xl dark:hover:shadow-gray-900/70 transition-all duration-300 overflow-hidden border border-gray-100 dark:border-gray-700 h-full flex flex-col"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
       {/* Product Image */}
       <div 
-        className="block relative overflow-hidden rounded-t-xl bg-soft-pink-100 aspect-square cursor-pointer"
+        ref={imageContainerRef}
+        className="block relative overflow-hidden rounded-t-xl bg-soft-pink-100 dark:bg-[#2D1A2F] aspect-square cursor-zoom-in flex-shrink-0 product-image-zoom-container"
         onClick={handleProductClick}
+        onMouseMove={handleMouseMove}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
         <div className="w-full h-full relative">
           {currentImageUrl && !imageError ? (
-            <Image
-              src={currentImageUrl}
-              alt={name}
-              fill
-              className="object-cover hover-lift transition-transform duration-700 ease-in-out"
-              sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-              onError={handleImageError}
-            />
+            <>
+              <Image
+                src={currentImageUrl}
+                alt={name}
+                fill
+                className={`object-cover hover-lift transition-transform duration-700 ease-in-out ${
+                  isZoomed ? 'product-image-zoomed' : ''
+                }`}
+                sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                onError={handleImageError}
+                style={{
+                  transformOrigin: `${zoomPosition.x}% ${zoomPosition.y}%`,
+                }}
+              />
+            </>
           ) : (
-            <div className="w-full h-full bg-soft-pink-100 flex items-center justify-center">
+            <div className="w-full h-full bg-soft-pink-100 dark:bg-[#2D1A2F] flex items-center justify-center">
               <div className="text-center">
-                <div className="w-16 h-16 mx-auto mb-2 bg-gray-200 rounded-full flex items-center justify-center">
+                <div className="w-16 h-16 mx-auto mb-2 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
                   <svg 
-                    className="w-8 h-8 text-gray-400" 
+                    className="w-8 h-8 text-gray-400 dark:text-gray-500" 
                     fill="none" 
                     stroke="currentColor" 
                     viewBox="0 0 24 24"
@@ -284,7 +346,7 @@ export default function ProductCard({
                     />
                   </svg>
                 </div>
-                <span className="text-primary font-script text-sm">No Image</span>
+                <span className="text-primary dark:text-[#E6C547] font-script text-sm">No Image</span>
               </div>
             </div>
           )}
@@ -303,8 +365,8 @@ export default function ProductCard({
             onClick={handleToggleWishlist}
             className={`p-2 sm:p-3 rounded-full shadow-lg transition-all duration-200 ${
               isInWishlist 
-                ? 'bg-accent text-white shadow-accent/25' 
-                : 'bg-white/90 backdrop-blur-sm hover:bg-accent hover:text-white hover:shadow-accent/25'
+                ? 'bg-accent dark:bg-[#E6C547] text-white shadow-accent/25' 
+                : 'bg-white/90 dark:bg-gray-700/90 backdrop-blur-sm hover:bg-accent dark:hover:bg-[#E6C547] hover:text-white hover:shadow-accent/25'
             }`}
             aria-label={isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
             suppressHydrationWarning
@@ -314,7 +376,7 @@ export default function ProductCard({
           <motion.button 
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
-            className="bg-white/90 backdrop-blur-sm p-2 sm:p-3 rounded-full shadow-lg hover:bg-accent hover:text-white hover:shadow-accent/25 transition-all duration-200"
+            className="bg-white/90 dark:bg-gray-700/90 backdrop-blur-sm p-2 sm:p-3 rounded-full shadow-lg hover:bg-accent dark:hover:bg-[#E6C547] hover:text-white hover:shadow-accent/25 transition-all duration-200"
             aria-label="Quick view"
             suppressHydrationWarning
           >
@@ -329,7 +391,7 @@ export default function ProductCard({
               initial={{ opacity: 0, y: 20, scale: 0.9 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20, scale: 0.9 }}
-              className="absolute bottom-2 sm:bottom-3 left-2 sm:left-3 right-2 sm:right-3 bg-white/95 backdrop-blur-sm py-2 sm:py-3 px-3 sm:px-4 rounded-lg shadow-lg text-center text-xs sm:text-sm font-medium border border-gray-100"
+              className="absolute bottom-2 sm:bottom-3 left-2 sm:left-3 right-2 sm:right-3 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm py-2 sm:py-3 px-3 sm:px-4 rounded-lg shadow-lg text-center text-xs sm:text-sm font-medium border border-gray-100 dark:border-gray-700 text-gray-900 dark:text-gray-100"
             >
               {notificationMessage}
             </motion.div>
@@ -338,17 +400,17 @@ export default function ProductCard({
       </div>
       
       {/* Product Info */}
-      <div className="p-3 sm:p-4 text-center">
+      <div className="p-3 sm:p-4 text-center flex flex-col flex-grow">
         <h3 
-          className="font-medium text-primary text-sm sm:text-lg mb-2 line-clamp-2 cursor-pointer hover:text-accent transition-colors"
+          className="font-medium text-primary dark:text-[#E6C547] text-sm sm:text-lg mb-2 line-clamp-2 cursor-pointer hover:text-accent dark:hover:text-[#E6C547]/80 transition-colors min-h-[2.5rem] sm:min-h-[3rem] flex items-center justify-center"
           onClick={handleProductClick}
         >
           {name}
         </h3>
-        <div className="flex items-center justify-center gap-1 sm:gap-2">
-          <span className="font-semibold text-accent text-base sm:text-xl">₹{price.toFixed(2)}</span>
+        <div className="flex items-center justify-center gap-1 sm:gap-2 mb-3 sm:mb-4">
+          <span className="font-semibold text-accent dark:text-[#E6C547] text-base sm:text-xl">₹{price.toFixed(2)}</span>
           {(comparePrice || originalPrice) && (
-            <span className="text-gray-400 line-through text-xs sm:text-sm">
+            <span className="text-gray-400 dark:text-gray-500 line-through text-xs sm:text-sm">
               ₹{((comparePrice || originalPrice) as number).toFixed(2)}
             </span>
           )}
@@ -360,14 +422,14 @@ export default function ProductCard({
           whileTap={{ scale: 0.98 }}
           onClick={handleAddToCart}
           disabled={stockStatus === 'out-of-stock' || !isActive || isAddingToCart}
-          className={`add-to-cart-button w-full mt-3 sm:mt-4 py-2 sm:py-3 px-3 sm:px-4 rounded-lg font-medium transition-all duration-200 text-sm sm:text-base ${
+          className={`add-to-cart-button w-full mt-auto py-2 sm:py-3 px-3 sm:px-4 rounded-lg font-medium transition-all duration-200 text-sm sm:text-base ${
             isAddedToCart 
-              ? 'bg-green-500 text-white' 
+              ? 'bg-green-500 dark:bg-green-600 text-white' 
               : stockStatus === 'out-of-stock' || !isActive
-              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
               : isAddingToCart
-              ? 'bg-gray-400 text-white cursor-not-allowed'
-              : 'bg-primary text-white hover:bg-accent'
+              ? 'bg-gray-400 dark:bg-gray-600 text-white cursor-not-allowed'
+              : 'bg-primary dark:bg-[#6B1A7A] text-white hover:bg-accent dark:hover:bg-[#E6C547]'
           }`}
         >
           {isAddedToCart ? (

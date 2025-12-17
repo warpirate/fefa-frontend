@@ -12,6 +12,7 @@ import { useCart } from '@/contexts/CartContext';
 import { useWishlist } from '@/contexts/WishlistContext';
 import UserDropdown from '@/components/auth/UserDropdown';
 import SearchSuggestions from '@/components/ui/SearchSuggestions';
+import ThemeToggle from '@/components/ui/ThemeToggle';
 import { loadCollectionsProductsData, loadCollectionsCategoriesData } from '@/utils/dataLoader';
 import { Product, CollectionCategory } from '@/types/data';
 import '@/styles/components/layout/Header.css';
@@ -152,10 +153,10 @@ export default function Header() {
 
   return (
       <header 
-        className={`fixed w-full z-50 transition-all duration-300 border-b border-gray-200 ${
+        className={`fixed w-full z-50 transition-all duration-300 border-b ${
           isScrolled 
-            ? 'bg-white shadow-soft py-1 sm:py-2' 
-            : 'bg-white py-2 sm:py-4'
+            ? 'bg-white dark:bg-[#1F2937] shadow-soft py-1 sm:py-2 border-gray-200 dark:border-gray-700' 
+            : 'bg-white dark:bg-[#1F2937] py-2 sm:py-4 border-gray-200 dark:border-gray-700'
         }`}
       >
       <div className="container mx-auto px-2 sm:px-4">
@@ -164,7 +165,7 @@ export default function Header() {
           <div className="lg:hidden">
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="p-2 text-primary focus:outline-none"
+              className="p-2 text-primary dark:text-[#E6C547] focus:outline-none"
               suppressHydrationWarning
             >
               <FiSearch className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />
@@ -180,8 +181,8 @@ export default function Header() {
                 transition={{ duration: 0.5 }}
               >
                 <div className="flex flex-col items-center">
-                  <h1 className="text-xl sm:text-2xl md:text-3xl font-script text-accent">fefa</h1>
-                  <p className="text-xs sm:text-xs md:text-xs tracking-wider text-primary">A CELEBRATION OF FEMININITY</p>
+                  <h1 className="text-xl sm:text-2xl md:text-3xl font-script text-accent dark:text-[#E6C547]">fefa</h1>
+                  <p className="text-xs sm:text-xs md:text-xs tracking-wider text-primary dark:text-[#E6C547]">A CELEBRATION OF FEMININITY</p>
                 </div>
               </motion.div>
             </Link>
@@ -195,7 +196,7 @@ export default function Header() {
                 <div key={item.name} className="relative group">
                   <Link
                     href={item.href}
-                    className="text-xs xl:text-sm font-medium uppercase tracking-wide transition-colors hover:text-accent text-primary"
+                    className="text-xs xl:text-sm font-medium uppercase tracking-wide transition-colors hover:text-accent dark:hover:text-[#E6C547] text-primary dark:text-[#E6C547]"
                     onMouseEnter={() => item.hasDropdown && handleDropdownToggle(item.name)}
                   >
                     {item.isIcon ? (
@@ -277,7 +278,7 @@ export default function Header() {
                   onChange={handleSearchInputChange}
                   onFocus={handleSearchFocus}
                   onBlur={handleSearchBlur}
-                  className="pl-10 pr-4 py-2 text-sm border-b border-primary focus:outline-none focus:border-accent bg-transparent text-primary placeholder-gray-400 w-full"
+                  className="pl-10 pr-4 py-2 text-sm border-b border-primary dark:border-[#E6C547] focus:outline-none focus:border-accent dark:focus:border-[#E6C547] bg-transparent text-primary dark:text-[#E6C547] placeholder-gray-400 dark:placeholder-gray-500 w-full"
                   suppressHydrationWarning
                 />
               </form>
@@ -293,9 +294,14 @@ export default function Header() {
               />
             </div>
             
+            {/* Theme Toggle */}
+            <div className="flex items-center">
+              <ThemeToggle />
+            </div>
+            
             {/* User Icons */}
           <div className="flex items-center space-x-2 xl:space-x-4">
-            <Link href="/wishlist" className="p-2 text-primary hover:text-accent transition-colors relative">
+            <Link href="/wishlist" className="p-2 text-primary dark:text-[#E6C547] hover:text-accent dark:hover:text-[#E6C547]/80 transition-colors relative">
               <FiHeart className="w-4 h-4 sm:w-5 sm:h-5" />
               {wishlistCount > 0 && (
                 <span className="absolute -top-1 -right-1 bg-accent text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
@@ -303,7 +309,7 @@ export default function Header() {
                 </span>
               )}
             </Link>
-            <Link href="/cart" className="p-2 text-primary hover:text-accent transition-colors relative">
+            <Link href="/cart" className="p-2 text-primary dark:text-[#E6C547] hover:text-accent dark:hover:text-[#E6C547]/80 transition-colors relative">
               <FiShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
               {totalQuantity > 0 && (
                 <span className="absolute -top-1 -right-1 bg-accent text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
@@ -323,13 +329,13 @@ export default function Header() {
                 <div className="flex items-center space-x-2">
                   <Link 
                     href="/auth/login" 
-                    className="px-4 py-2 text-sm font-medium text-primary hover:text-accent transition-colors"
+                    className="px-4 py-2 text-sm font-medium text-primary dark:text-[#E6C547] hover:text-accent dark:hover:text-[#E6C547]/80 transition-colors"
                   >
                     Sign In
                   </Link>
                   <Link 
                     href="/auth/register" 
-                    className="px-4 py-2 text-sm font-medium bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+                    className="px-4 py-2 text-sm font-medium bg-primary dark:bg-[#6B1A7A] text-white rounded-lg hover:bg-primary/90 dark:hover:bg-[#6B1A7A]/90 transition-colors"
                   >
                     Sign Up
                   </Link>
@@ -343,7 +349,7 @@ export default function Header() {
 
       {/* Mobile Navigation Bar */}
       <div className="lg:hidden fixed bottom-3 sm:bottom-4 md:bottom-5 left-1/2 transform -translate-x-1/2 z-40">
-        <div className="bg-white rounded-2xl sm:rounded-3xl md:rounded-[1.75rem] px-3 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 flex items-center justify-center space-x-1 sm:space-x-2 md:space-x-3 shadow-lg border border-gray-200 min-w-[280px] sm:min-w-[350px] md:min-w-[420px]">
+        <div className="bg-white dark:bg-[#1F2937] rounded-2xl sm:rounded-3xl md:rounded-[1.75rem] px-3 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 flex items-center justify-center space-x-1 sm:space-x-2 md:space-x-3 shadow-lg border border-gray-200 dark:border-gray-700 min-w-[280px] sm:min-w-[350px] md:min-w-[420px]">
           {/* Navigation Icons */}
           {mobileNavIcons.map((item) => {
             const IconComponent = item.icon;
@@ -351,7 +357,7 @@ export default function Header() {
               <div key={item.name} className="relative">
                 <Link
                   href={item.href}
-                  className="w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 lg:w-12 lg:h-12 rounded-full bg-gray-100 flex items-center justify-center text-primary hover:transform hover:-translate-y-1 transition-all duration-300 hover:bg-gray-200"
+                  className="w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 lg:w-12 lg:h-12 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-primary dark:text-[#E6C547] hover:transform hover:-translate-y-1 transition-all duration-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                   onMouseEnter={() => setHoveredIcon(item.name)}
                   onMouseLeave={() => setHoveredIcon(null)}
                   onClick={() => item.hasDropdown && handleDropdownToggle(item.name)}
@@ -433,7 +439,7 @@ export default function Header() {
           <div className="relative">
             <Link 
               href="/wishlist" 
-              className="w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 lg:w-12 lg:h-12 rounded-full bg-gray-100 flex items-center justify-center text-primary hover:transform hover:-translate-y-1 transition-all duration-300 hover:bg-gray-200 relative"
+              className="w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 lg:w-12 lg:h-12 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-primary dark:text-[#E6C547] hover:transform hover:-translate-y-1 transition-all duration-300 hover:bg-gray-200 dark:hover:bg-gray-600 relative"
               onMouseEnter={() => setHoveredIcon('WISHLIST')}
               onMouseLeave={() => setHoveredIcon(null)}
             >
@@ -462,7 +468,7 @@ export default function Header() {
           <div className="relative">
             <Link 
               href="/cart" 
-              className="w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 lg:w-12 lg:h-12 rounded-full bg-gray-100 flex items-center justify-center text-primary hover:transform hover:-translate-y-1 transition-all duration-300 hover:bg-gray-200 relative"
+              className="w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 lg:w-12 lg:h-12 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-primary dark:text-[#E6C547] hover:transform hover:-translate-y-1 transition-all duration-300 hover:bg-gray-200 dark:hover:bg-gray-600 relative"
               onMouseEnter={() => setHoveredIcon('CART')}
               onMouseLeave={() => setHoveredIcon(null)}
             >
@@ -487,6 +493,11 @@ export default function Header() {
             )}
           </div>
 
+          {/* Theme Toggle - Mobile */}
+          <div className="flex items-center">
+            <ThemeToggle />
+          </div>
+
           {/* User Profile Icon with Dropdown */}
           <div className="relative">
             {isLoading ? (
@@ -495,7 +506,7 @@ export default function Header() {
               </button>
             ) : isAuthenticated ? (
               <button
-                className="w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 lg:w-12 lg:h-12 rounded-full bg-gray-100 flex items-center justify-center text-primary hover:transform hover:-translate-y-1 transition-all duration-300 hover:bg-gray-200"
+                className="w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 lg:w-12 lg:h-12 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-primary dark:text-[#E6C547] hover:transform hover:-translate-y-1 transition-all duration-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                 onMouseEnter={() => setHoveredIcon('PROFILE')}
                 onMouseLeave={() => setHoveredIcon(null)}
                 onClick={() => handleDropdownToggle('PROFILE')}
@@ -505,7 +516,7 @@ export default function Header() {
             ) : (
               <Link 
                 href="/auth/login" 
-                className="w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 lg:w-12 lg:h-12 rounded-full bg-gray-100 flex items-center justify-center text-primary hover:transform hover:-translate-y-1 transition-all duration-300 hover:bg-gray-200"
+                className="w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 lg:w-12 lg:h-12 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-primary dark:text-[#E6C547] hover:transform hover:-translate-y-1 transition-all duration-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                 onMouseEnter={() => setHoveredIcon('PROFILE')}
                 onMouseLeave={() => setHoveredIcon(null)}
               >
@@ -531,7 +542,7 @@ export default function Header() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 10 }}
-                className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50"
+                className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-48 bg-white dark:bg-[#1F2937] border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50"
               >
                 <div className="p-3">
                   <div className="flex items-center space-x-3 py-2 mb-3">
@@ -539,13 +550,13 @@ export default function Header() {
                       <FiUser className="w-4 h-4 text-pink-600" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-[#4B006E]">Chilla</p>
+                      <p className="text-sm font-medium text-[#4B006E] dark:text-[#E6C547]">Chilla</p>
                     </div>
                   </div>
                   <div className="border-t border-gray-100 pt-2">
                     <Link
                       href="/account/settings?tab=profile"
-                      className="flex items-center space-x-3 py-2 text-sm text-[#4B006E] hover:text-[#D4AF37] transition-colors"
+                      className="flex items-center space-x-3 py-2 text-sm text-[#4B006E] dark:text-[#E6C547] hover:text-[#D4AF37] dark:hover:text-[#E6C547]/80 transition-colors"
                       onClick={() => setOpenDropdown(null)}
                     >
                       <FiUser className="w-4 h-4" />
@@ -553,7 +564,7 @@ export default function Header() {
                     </Link>
                     <Link
                       href="/account/orders"
-                      className="flex items-center space-x-3 py-2 text-sm text-[#4B006E] hover:text-[#D4AF37] transition-colors"
+                      className="flex items-center space-x-3 py-2 text-sm text-[#4B006E] dark:text-[#E6C547] hover:text-[#D4AF37] dark:hover:text-[#E6C547]/80 transition-colors"
                       onClick={() => setOpenDropdown(null)}
                     >
                       <FiShoppingBag className="w-4 h-4" />
@@ -561,7 +572,7 @@ export default function Header() {
                     </Link>
                     <Link
                       href="/account/settings"
-                      className="flex items-center space-x-3 py-2 text-sm text-[#4B006E] hover:text-[#D4AF37] transition-colors"
+                      className="flex items-center space-x-3 py-2 text-sm text-[#4B006E] dark:text-[#E6C547] hover:text-[#D4AF37] dark:hover:text-[#E6C547]/80 transition-colors"
                       onClick={() => setOpenDropdown(null)}
                     >
                       <FiSettings className="w-4 h-4" />
@@ -593,7 +604,7 @@ export default function Header() {
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
-          className="lg:hidden fixed top-12 sm:top-16 left-0 right-0 bg-white border-b border-gray-200 z-30 px-2 sm:px-4 py-2 sm:py-3"
+          className="lg:hidden fixed top-12 sm:top-16 left-0 right-0 bg-white dark:bg-[#1F2937] border-b border-gray-200 dark:border-gray-700 z-30 px-2 sm:px-4 py-2 sm:py-3"
         >
             <div className="flex items-center relative">
               <form onSubmit={handleSearch} className="relative w-full">

@@ -18,7 +18,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 20 }}
           transition={{ duration: 0.3 }}
-          className="lg:min-h-screen pt-20"
+          className="lg:min-h-screen pt-20 bg-white dark:bg-[#0a0a0a] transition-colors duration-300"
         >
           {children}
         </motion.main>

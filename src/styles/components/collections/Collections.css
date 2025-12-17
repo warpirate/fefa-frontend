@@ -121,6 +121,7 @@
   position: relative;
   overflow: hidden;
   transition: all 0.3s ease;
+  font-weight: 500;
 }
 
 .pagination-button::after {
@@ -139,6 +140,36 @@
 .pagination-button:hover::after {
   width: 100%;
   height: 100%;
+}
+
+.pagination-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 80px;
+}
+
+.pagination-page {
+  font-weight: 500;
+}
+
+/* Pagination responsive styles */
+@media (max-width: 640px) {
+  .pagination-nav {
+    min-width: 60px;
+    padding: 0.5rem 0.75rem;
+  }
+  
+  .pagination-page {
+    min-width: 2rem;
+    padding: 0.5rem;
+  }
+}
+
+/* Pagination ellipsis */
+.pagination-button + span {
+  user-select: none;
+  pointer-events: none;
 }
 
 .empty-state {
@@ -372,14 +403,34 @@
 }
 
 /* Dark mode support */
+.dark .collections-page {
+  background: linear-gradient(135deg, #0a0a0a 0%, #1F2937 100%);
+}
+
 @media (prefers-color-scheme: dark) {
+  :root:not(.light) .collections-page {
+    background: linear-gradient(135deg, #0a0a0a 0%, #1F2937 100%);
+  }
+}
+
+.dark .filter-sidebar {
+  background: rgba(31, 41, 55, 0.95);
+  border-color: rgba(107, 26, 122, 0.3);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) .filter-sidebar {
+    background: rgba(31, 41, 55, 0.95);
+    border-color: rgba(107, 26, 122, 0.3);
+  }
+  
   .collections-page {
-    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+    background: linear-gradient(135deg, #0a0a0a 0%, #1F2937 100%);
   }
   
   .filter-sidebar {
-    background: rgba(30, 30, 30, 0.95);
-    border-color: rgba(75, 0, 110, 0.3);
+    background: rgba(31, 41, 55, 0.95);
+    border-color: rgba(107, 26, 122, 0.3);
   }
   
   .category-dropdown button,

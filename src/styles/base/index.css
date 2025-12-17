@@ -25,8 +25,21 @@
   --font-script: 'Dancing Script', cursive;
 }
 
+/* Dark mode support - using class-based approach */
+.dark {
+  --background: #0a0a0a; /* Very dark background */
+  --foreground: #F9FAFB; /* Light text for dark mode */
+  --primary: #6B1A7A; /* Lighter deep purple for dark mode */
+  --accent: #E6C547; /* Lighter gold for dark mode */
+  --soft-pink-100: #1F2937; /* Dark gray for cards/sections */
+  --soft-pink-200: #374151; /* Slightly lighter for hover states */
+  --white: #f8f9fa; /* Slightly off-white for dark mode */
+  --dark-gray: #e5e7eb; /* Lighter gray for dark mode text */
+}
+
+/* Fallback for prefers-color-scheme if class is not set */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not(.light) {
     --background: #0a0a0a;
     --foreground: #ededed;
     --primary: #6B1A7A; /* Lighter deep purple for dark mode */

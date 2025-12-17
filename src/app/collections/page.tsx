@@ -674,41 +674,103 @@ function CollectionsContent() {
                   transition={{ duration: 0.6, delay: 0.3 }}
                   className="mt-12 flex justify-center"
               >
-                  <nav className="flex items-center space-x-2">
+                  <nav className="flex items-center flex-wrap justify-center gap-2">
+                    {/* Previous Button */}
                     <motion.button 
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={() => handlePageChange(Math.max(1, pagination.currentPage - 1))}
                       disabled={!pagination.hasPrevPage}
-                      className="pagination-button px-3 py-2 rounded-lg border border-gray-300 hover:bg-soft-pink-100 hover:border-primary transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="pagination-button pagination-nav px-3 py-2 sm:px-4 sm:py-2 rounded-lg border border-gray-300 hover:bg-soft-pink-100 hover:border-primary transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+                      aria-label="Previous page"
                     >
-                      &laquo;
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                      <span className="hidden sm:inline ml-1">Prev</span>
                     </motion.button>
                     
-                    {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((page) => (
-                      <motion.button 
-                        key={page}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => handlePageChange(page)}
-                        className={`pagination-button px-3 py-2 rounded-lg border transition-all duration-200 ${
-                          pagination.currentPage === page 
-                            ? 'bg-primary text-white shadow-md' 
-                            : 'border-gray-300 hover:bg-soft-pink-100 hover:border-primary'
-                        }`}
-                      >
-                        {page}
-                      </motion.button>
-                    ))}
+                    {/* Page Numbers */}
+                    {(() => {
+                      const totalPages = pagination.totalPages;
+                      const currentPage = pagination.currentPage;
+                      const pages: (number | string)[] = [];
+                      
+                      if (totalPages <= 7) {
+                        // Show all pages if 7 or fewer
+                        for (let i = 1; i <= totalPages; i++) {
+                          pages.push(i);
+                        }
+                      } else {
+                        // Always show first page
+                        pages.push(1);
+                        
+                        if (currentPage <= 3) {
+                          // Near the beginning
+                          for (let i = 2; i <= 4; i++) {
+                            pages.push(i);
+                          }
+                          pages.push('ellipsis-end');
+                          pages.push(totalPages);
+                        } else if (currentPage >= totalPages - 2) {
+                          // Near the end
+                          pages.push('ellipsis-start');
+                          for (let i = totalPages - 3; i <= totalPages; i++) {
+                            pages.push(i);
+                          }
+                        } else {
+                          // In the middle
+                          pages.push('ellipsis-start');
+                          for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+                            pages.push(i);
+                          }
+                          pages.push('ellipsis-end');
+                          pages.push(totalPages);
+                        }
+                      }
+                      
+                      return pages.map((page, index) => {
+                        if (page === 'ellipsis-start' || page === 'ellipsis-end') {
+                          return (
+                            <span key={`ellipsis-${index}`} className="px-2 py-2 text-gray-400">
+                              ...
+                            </span>
+                          );
+                        }
+                        
+                        return (
+                          <motion.button 
+                            key={page}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => handlePageChange(page as number)}
+                            className={`pagination-button pagination-page px-3 py-2 sm:px-4 sm:py-2 rounded-lg border transition-all duration-200 text-sm sm:text-base min-w-[2.5rem] sm:min-w-[3rem] ${
+                              pagination.currentPage === page 
+                                ? 'bg-primary text-white border-primary shadow-md font-medium' 
+                                : 'border-gray-300 hover:bg-soft-pink-100 hover:border-primary bg-white'
+                            }`}
+                            aria-label={`Go to page ${page}`}
+                            aria-current={pagination.currentPage === page ? 'page' : undefined}
+                          >
+                            {page}
+                          </motion.button>
+                        );
+                      });
+                    })()}
                     
+                    {/* Next Button */}
                     <motion.button 
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={() => handlePageChange(Math.min(pagination.totalPages, pagination.currentPage + 1))}
                       disabled={!pagination.hasNextPage}
-                      className="pagination-button px-3 py-2 rounded-lg border border-gray-300 hover:bg-soft-pink-100 hover:border-primary transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="pagination-button pagination-nav px-3 py-2 sm:px-4 sm:py-2 rounded-lg border border-gray-300 hover:bg-soft-pink-100 hover:border-primary transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+                      aria-label="Next page"
                     >
-                      &raquo;
+                      <span className="hidden sm:inline mr-1">Next</span>
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
                     </motion.button>
                   </nav>
               </motion.div>

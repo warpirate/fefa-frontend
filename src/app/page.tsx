@@ -60,6 +60,10 @@ export default function Home() {
   const [retrying, setRetrying] = useState({ categories: false, carousel: false });
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [loadingFeaturedProducts, setLoadingFeaturedProducts] = useState(true);
+  const [featuredProductsScroll, setFeaturedProductsScroll] = useState(0);
+  const [featuredProductsSliderRef, setFeaturedProductsSliderRef] = useState<HTMLDivElement | null>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
   
   // Get data from context
   const { 
@@ -125,6 +129,34 @@ export default function Home() {
 
     loadFeaturedProducts();
   }, []);
+
+  // Update scroll state when slider scrolls
+  useEffect(() => {
+    if (!featuredProductsSliderRef) return;
+    
+    const updateScrollState = () => {
+      const scrollLeft = featuredProductsSliderRef.scrollLeft;
+      const maxScroll = featuredProductsSliderRef.scrollWidth - featuredProductsSliderRef.clientWidth;
+      
+      setFeaturedProductsScroll(scrollLeft);
+      setCanScrollLeft(scrollLeft > 10);
+      setCanScrollRight(scrollLeft < maxScroll - 10);
+    };
+    
+    featuredProductsSliderRef.addEventListener('scroll', updateScrollState);
+    updateScrollState(); // Initial check
+    
+    // Also check on resize
+    const handleResize = () => {
+      updateScrollState();
+    };
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      featuredProductsSliderRef.removeEventListener('scroll', updateScrollState);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [featuredProductsSliderRef]);
 
   // Handle authentication redirect
   useEffect(() => {
@@ -267,12 +299,30 @@ export default function Home() {
     setIsDragging(false);
   };
 
+  // Featured products slider navigation
+  const scrollFeaturedProducts = (direction: 'left' | 'right') => {
+    if (!featuredProductsSliderRef) return;
+    
+    const cardWidth = 280; // Approximate card width including gap
+    const scrollAmount = cardWidth * 2; // Scroll 2 cards at a time
+    const maxScroll = featuredProductsSliderRef.scrollWidth - featuredProductsSliderRef.clientWidth;
+    
+    const newScroll = direction === 'left' 
+      ? Math.max(0, featuredProductsSliderRef.scrollLeft - scrollAmount)
+      : Math.min(maxScroll, featuredProductsSliderRef.scrollLeft + scrollAmount);
+    
+    featuredProductsSliderRef.scrollTo({
+      left: newScroll,
+      behavior: 'smooth'
+    });
+  };
+
   return (
     <DataLoader>
       <MainLayout>
       <div className="overflow-x-hidden">
       {/* Jewelry Categories Section */}
-      <section className="pb-8 pt-12 bg-white">
+      <section className="pb-8 pt-12 bg-white dark:bg-[#0a0a0a] transition-colors duration-300">
         <div className="container mx-auto px-4">
           {fieldErrors.categories ? (
             <ErrorDisplay 
@@ -439,7 +489,7 @@ export default function Home() {
       </section>
 
       {/* Features Section */}
-      <section className="pt-16 pb-8 bg-soft-pink-100 overflow-hidden">
+      <section className="pt-16 pb-8 bg-soft-pink-100 dark:bg-[#1F2937] overflow-hidden transition-colors duration-300">
         <div className="container mx-auto px-4">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
@@ -615,26 +665,69 @@ export default function Home() {
             </p>
           </motion.div>
           
-          {/* Featured Products container with horizontal scroll for mobile/tablet, grid for desktop */}
+          {/* Featured Products Slider */}
           {loadingFeaturedProducts ? (
             <div className="flex justify-center items-center py-12">
               <div className="w-12 h-12 border-4 border-amber-400 border-t-transparent rounded-full animate-spin"></div>
             </div>
           ) : featuredProducts.length > 0 ? (
-            <>
-              {/* Mobile/Tablet horizontal scroll */}
-              <div 
-                id="featured-products-container"
-                className="flex gap-3 xs:gap-4 sm:gap-5 md:gap-6 lg:hidden overflow-x-auto scrollbar-hide pb-2"
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            <div className="relative group">
+              {/* Navigation Arrows - Invisible by default, show on hover */}
+              <button
+                onClick={() => scrollFeaturedProducts('left')}
+                disabled={!canScrollLeft}
+                className={`absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700 shadow-lg rounded-full p-2 sm:p-3 transition-all duration-200 opacity-0 group-hover:opacity-100 ${
+                  !canScrollLeft ? 'cursor-not-allowed' : 'hover:scale-110'
+                } flex items-center justify-center`}
+                aria-label="Previous products"
               >
-                {featuredProducts.slice(0, 6).map((product, index) => {
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              
+              <button
+                onClick={() => scrollFeaturedProducts('right')}
+                disabled={!canScrollRight}
+                className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700 shadow-lg rounded-full p-2 sm:p-3 transition-all duration-200 opacity-0 group-hover:opacity-100 ${
+                  !canScrollRight ? 'cursor-not-allowed' : 'hover:scale-110'
+                } flex items-center justify-center`}
+                aria-label="Next products"
+              >
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+
+              {/* Products Slider Container */}
+              <div 
+                ref={setFeaturedProductsSliderRef}
+                id="featured-products-slider"
+                className="flex gap-4 sm:gap-5 md:gap-6 overflow-x-auto overflow-y-hidden scrollbar-hide pb-2 cursor-grab active:cursor-grabbing px-8 sm:px-10 md:px-12 lg:px-16"
+                style={{ 
+                  scrollbarWidth: 'none', 
+                  msOverflowStyle: 'none',
+                  scrollBehavior: 'smooth',
+                  touchAction: 'pan-x'
+                }}
+                onMouseDown={handleMouseDown}
+                onMouseLeave={handleMouseLeave}
+                onMouseUp={handleMouseUp}
+                onMouseMove={handleMouseMove}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+              >
+                {featuredProducts.map((product, index) => {
                   const discountPercentage = product.comparePrice 
                     ? Math.round(((product.comparePrice - product.price) / product.comparePrice) * 100)
                     : 0;
                   
                   return (
-                    <div key={product._id || index} className="flex-shrink-0 w-48 xs:w-52 sm:w-56 md:w-60">
+                    <div 
+                      key={product._id || index} 
+                      className="flex-shrink-0 w-[200px] xs:w-[220px] sm:w-[240px] md:w-[260px] lg:w-[280px] h-full"
+                    >
                       <ProductCard
                         _id={product._id}
                         name={product.name}
@@ -653,41 +746,7 @@ export default function Home() {
                   );
                 })}
               </div>
-              
-              {/* Desktop grid layout */}
-              <div className="hidden lg:grid lg:grid-cols-3 gap-6 lg:gap-8">
-                {featuredProducts.slice(0, 6).map((product, index) => {
-                  const discountPercentage = product.comparePrice 
-                    ? Math.round(((product.comparePrice - product.price) / product.comparePrice) * 100)
-                    : 0;
-                  
-                  return (
-                    <motion.div
-                      key={product._id || index}
-                      initial={{ opacity: 0, y: 30 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.6, delay: index * 0.1 }}
-                      viewport={{ once: true }}
-                    >
-                      <ProductCard
-                        _id={product._id}
-                        name={product.name}
-                        price={product.price}
-                        comparePrice={product.comparePrice}
-                        images={product.images || []}
-                        slug={product.slug}
-                        category={product.category}
-                        isFeatured={product.isFeatured}
-                        isActive={product.isActive}
-                        discountPercentage={discountPercentage}
-                        stockStatus={product.inventory?.quantity > 0 ? 'in-stock' : 'out-of-stock'}
-                        ratings={product.ratings}
-                      />
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </>
+            </div>
           ) : (
             <div className="text-center py-12">
               <p className="text-dark-gray text-lg">No featured products available at the moment.</p>
@@ -843,7 +902,7 @@ export default function Home() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 viewport={{ once: true }}
-                className="bg-white p-3 xs:p-4 sm:p-5 rounded-xl xs:rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex-shrink-0 w-64 xs:w-72 sm:w-80"
+                className="bg-white dark:bg-[#1F2937] p-3 xs:p-4 sm:p-5 rounded-xl xs:rounded-2xl shadow-lg dark:shadow-gray-900/50 hover:shadow-xl dark:hover:shadow-gray-900/70 transition-all duration-300 hover:scale-105 flex-shrink-0 w-64 xs:w-72 sm:w-80"
               >
                 <div className="flex items-center mb-2 xs:mb-3">
                   <div className="w-8 h-8 xs:w-10 xs:h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-primary to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-xs xs:text-sm sm:text-base">
@@ -877,7 +936,7 @@ export default function Home() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 viewport={{ once: true }}
-                className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+                className="bg-white dark:bg-[#1F2937] p-6 rounded-2xl shadow-lg dark:shadow-gray-900/50 hover:shadow-xl dark:hover:shadow-gray-900/70 transition-all duration-300 hover:scale-105"
               >
                 <div className="flex items-center mb-4">
                   <div className="w-12 h-12 bg-gradient-to-br from-primary to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg">

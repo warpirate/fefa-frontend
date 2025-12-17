@@ -63,15 +63,45 @@ class AuthService {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
+      // Handle rate limiting (429) before trying to parse JSON
+      if (response.status === 429) {
+        let errorMessage = 'Too many authentication attempts, please try again later.';
+        let retryAfter = '15 minutes';
+        
+        try {
+          const data = await response.json();
+          errorMessage = data.message || data.error || errorMessage;
+          retryAfter = data.retryAfter || retryAfter;
+        } catch (parseError) {
+          // If JSON parsing fails, use default message
+          console.warn('Failed to parse 429 error response:', parseError);
+        }
+        
+        const error = new Error(errorMessage);
+        error.status = 429;
+        error.retryAfter = retryAfter;
+        throw error;
+      }
+
+      // Parse response for other status codes
+      const contentType = response.headers.get('content-type');
+      let data;
+      
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        throw new Error(text || 'Login failed');
+      }
 
       if (!response.ok) {
-        throw new Error(data.error || 'Login failed');
+        throw new Error(data.message || data.error || 'Login failed');
       }
 
       return data.data;
     } catch (error) {
       console.error('Login error:', error);
+      // Re-throw the error to preserve the original error message and status
       throw error;
     }
   }
