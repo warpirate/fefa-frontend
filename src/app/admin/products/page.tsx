@@ -16,7 +16,9 @@ import {
   MdError as ErrorIcon,
   MdCheckCircle as CheckCircle,
   MdCancel as Cancel,
-  MdBugReport as BugReport
+  MdBugReport as BugReport,
+  MdChevronLeft as ChevronLeft,
+  MdChevronRight as ChevronRight
 } from 'react-icons/md';
 import adminService from '../../../services/adminService';
 import ViewModal from '../../../components/admin/ViewModal';
@@ -36,6 +38,12 @@ export default function ProductsPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
   
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  
   // Modal states
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -48,11 +56,15 @@ export default function ProductsPage() {
   const [testResults, setTestResults] = useState<Record<string, any>>({});
   const [testing, setTesting] = useState<Record<string, boolean>>({});
 
-  // Load products and categories on component mount
+  // Load categories on component mount
   useEffect(() => {
-    loadProducts();
     loadCategories();
   }, []);
+
+  // Load products when filters or pagination changes
+  useEffect(() => {
+    loadProducts();
+  }, [currentPage, itemsPerPage, searchTerm, selectedCategory, selectedStatus]);
 
   // Load products from API
   const loadProducts = async () => {
@@ -61,13 +73,21 @@ export default function ProductsPage() {
       setError(null);
       
       const result = await adminService.getAllProducts({
-        search: searchTerm,
+        page: currentPage,
+        limit: itemsPerPage,
+        search: searchTerm || undefined,
         category: selectedCategory === 'All' ? null : selectedCategory,
         status: selectedStatus === 'All' ? null : selectedStatus.toLowerCase()
       });
       
       if (result.success) {
         setProducts(result.data.map(adminService.formatProductForDisplay));
+        
+        // Update pagination info from API response
+        if (result.pagination) {
+          setTotalPages(result.pagination.totalPages || 1);
+          setTotalItems(result.pagination.totalProducts || result.data.length);
+        }
       } else {
         setError(result.error || 'Failed to load products');
       }
@@ -117,7 +137,20 @@ export default function ProductsPage() {
 
   // Handle refresh
   const handleRefresh = () => {
+    setCurrentPage(1);
     loadProducts();
+  };
+
+  // Handle page change
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Handle items per page change
+  const handleItemsPerPageChange = (items: number) => {
+    setItemsPerPage(items);
+    setCurrentPage(1); // Reset to first page when changing items per page
   };
 
   // Handle view product
@@ -289,18 +322,8 @@ export default function ProductsPage() {
     loadProducts();
   };
 
-  // Filter products based on current filters
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = !searchTerm || 
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (product.sku && product.sku.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
-    const matchesStatus = selectedStatus === 'All' || 
-                         (selectedStatus === 'Active' && product.status === 'active') ||
-                         (selectedStatus === 'Inactive' && product.status === 'inactive');
-    
-    return matchesSearch && matchesCategory && matchesStatus;
-  });
+  // Products are already filtered by backend, so we use them directly
+  const filteredProducts = products;
 
   // Loading state
   if (loading) {
@@ -404,7 +427,15 @@ export default function ProductsPage() {
                   type="text"
                   placeholder="Search products..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1); // Reset to first page when search changes
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      loadProducts();
+                    }
+                  }}
                   className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:border-purple-500 text-sm"
                   style={{ '--tw-ring-color': 'var(--primary)' } as React.CSSProperties}
                 />
@@ -436,7 +467,10 @@ export default function ProductsPage() {
                   </label>
                   <select
                     value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    onChange={(e) => {
+                      setSelectedCategory(e.target.value);
+                      setCurrentPage(1); // Reset to first page when filter changes
+                    }}
                     className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
                   >
                     {categories.map(category => (
@@ -450,7 +484,10 @@ export default function ProductsPage() {
                   </label>
                   <select
                     value={selectedStatus}
-                    onChange={(e) => setSelectedStatus(e.target.value)}
+                    onChange={(e) => {
+                      setSelectedStatus(e.target.value);
+                      setCurrentPage(1); // Reset to first page when filter changes
+                    }}
                     className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
                   >
                     {statuses.map(status => (
@@ -464,6 +501,7 @@ export default function ProductsPage() {
                       setSearchTerm('');
                       setSelectedCategory('All');
                       setSelectedStatus('All');
+                      setCurrentPage(1);
                     }}
                     className="w-full sm:w-auto inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors"
                   >
@@ -479,9 +517,24 @@ export default function ProductsPage() {
       {/* Products Table */}
       <div className="bg-white shadow overflow-hidden sm:rounded-md">
         <div className="px-3 py-4 sm:px-4 sm:py-5 lg:px-6">
-          <h3 className="text-base sm:text-lg leading-6 font-medium text-gray-900">
-            Products ({filteredProducts.length})
-          </h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-base sm:text-lg leading-6 font-medium text-gray-900">
+              Products ({totalItems})
+            </h3>
+            <div className="flex items-center space-x-2">
+              <label className="text-sm text-gray-700">Items per page:</label>
+              <select
+                value={itemsPerPage}
+                onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
+                className="px-2 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
+          </div>
         </div>
         
         {/* Mobile Card View */}
@@ -665,15 +718,98 @@ export default function ProductsPage() {
       </div>
 
       {/* Empty State */}
-      {filteredProducts.length === 0 && (
-            <div className="text-center py-12">
-              <Package className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No products found</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                Try adjusting your search or filter criteria.
+      {filteredProducts.length === 0 && !loading && (
+        <div className="text-center py-12">
+          <Package className="mx-auto h-12 w-12 text-gray-400" />
+          <h3 className="mt-2 text-sm font-medium text-gray-900">No products found</h3>
+          <p className="mt-1 text-sm text-gray-500">
+            Try adjusting your search or filter criteria.
+          </p>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 rounded-lg shadow">
+          <div className="flex-1 flex justify-between sm:hidden">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
+          <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm text-gray-700">
+                Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to{' '}
+                <span className="font-medium">
+                  {Math.min(currentPage * itemsPerPage, totalItems)}
+                </span>{' '}
+                of <span className="font-medium">{totalItems}</span> results
               </p>
             </div>
-          )}
+            <div>
+              <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span className="sr-only">Previous</span>
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+                
+                {/* Page numbers */}
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum: number;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+                  
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => handlePageChange(pageNum)}
+                      className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                        currentPage === pageNum
+                          ? 'z-10 bg-primary border-primary text-white'
+                          : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                      }`}
+                      style={currentPage === pageNum ? { backgroundColor: 'var(--primary)' } : {}}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+                
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span className="sr-only">Next</span>
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+              </nav>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modals */}
       <ViewModal
