@@ -95,7 +95,7 @@ function ResetPasswordContent() {
   };
 
   const handleBackToLogin = () => {
-    router.push('/auth/login');
+    router.push('/');
   };
 
   if (isSuccess) {

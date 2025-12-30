@@ -17,12 +17,14 @@ export default function WishlistPage() {
   const { isAuthenticated, user } = useAuth();
   const { 
     wishlist, 
+    localWishlist,
     isLoading, 
     error, 
     addToWishlist,
     removeFromWishlist, 
     moveToCart, 
-    clearError 
+    clearError,
+    getWishlistItems
   } = useWishlist();
   const { addToCart, refreshCart } = useCart();
 
@@ -33,24 +35,33 @@ export default function WishlistPage() {
     }
   }, [error, clearError]);
 
-  const handleRemoveFromWishlist = async (productId: string) => {
+  const handleRemoveFromWishlist = async (productId: string, variantId?: string) => {
     try {
       setRemovingItemId(productId);
-      await removeFromWishlist(productId);
+      await removeFromWishlist(productId, variantId);
     } catch (error) {
-      console.error('Error removing from wishlist:', error);
+      // Error removing from wishlist
     } finally {
       setRemovingItemId(null);
     }
   };
 
-  const handleMoveToCart = async (productId: string) => {
+  const handleMoveToCart = async (productId: string, variantId?: string, productInfo?: { name?: string; image?: string; slug?: string; price: number }) => {
     try {
       setMovingToCartId(productId);
-      await moveToCart(productId, 1);
       
-      // Refresh cart to show updated cart count
-      await refreshCart();
+      // If not authenticated, add to local cart first
+      if (!isAuthenticated && productInfo) {
+        await addToCart(productId, 1, variantId, productInfo);
+      }
+      
+      // Remove from wishlist (this will handle both authenticated and unauthenticated)
+      await moveToCart(productId, 1, variantId);
+      
+      // Refresh cart to show updated cart count (only if authenticated)
+      if (isAuthenticated) {
+        await refreshCart();
+      }
       
       // Show success animation
       const item = document.getElementById(`wishlist-item-${productId}`);
@@ -61,7 +72,7 @@ export default function WishlistPage() {
         }, 1000);
       }
     } catch (error) {
-      console.error('Error moving to cart:', error);
+      // Error moving to cart
     } finally {
       setMovingToCartId(null);
     }
@@ -80,7 +91,7 @@ export default function WishlistPage() {
         }, 1000);
       }
     } catch (error) {
-      console.error('Error adding to cart:', error);
+      // Error adding to cart
     }
   };
 
@@ -134,17 +145,19 @@ export default function WishlistPage() {
         </motion.div>
 
 
-        {wishlist && wishlist.items && wishlist.items.length > 0 ? (
-          <motion.div
-            variants={container}
-            initial="hidden"
-            animate="show"
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-          >
-            <AnimatePresence>
-              {wishlist.items
-                .filter((wishlistItem) => wishlistItem.product !== null && wishlistItem.product !== undefined)
-                .map((wishlistItem) => {
+        {(() => {
+          const wishlistItems = getWishlistItems();
+          return wishlistItems.length > 0 ? (
+            <motion.div
+              variants={container}
+              initial="hidden"
+              animate="show"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+            >
+              <AnimatePresence>
+                {wishlistItems
+                  .filter((wishlistItem) => wishlistItem.product !== null && wishlistItem.product !== undefined)
+                  .map((wishlistItem) => {
                 const product = wishlistItem.product!; // Safe to use ! here since we filtered nulls
                 
                 // Handle both object and string array formats for images
@@ -242,7 +255,7 @@ export default function WishlistPage() {
                       
                       <div className="absolute top-3 right-3 flex flex-col gap-2">
                         <button
-                          onClick={() => handleRemoveFromWishlist(product._id)}
+                          onClick={() => handleRemoveFromWishlist(product._id, wishlistItem.variant?._id)}
                           className="bg-white p-2 rounded-full shadow-md hover:bg-red-500 hover:text-white transition-colors"
                           disabled={removingItemId === product._id}
                           title="Remove from wishlist"
@@ -280,7 +293,15 @@ export default function WishlistPage() {
                       
                       <div className="mt-4 flex gap-2">
                         <button
-                          onClick={() => handleMoveToCart(product._id)}
+                          onClick={() => {
+                            const productInfo = {
+                              name: product.name,
+                              image: product.images?.[0]?.url || '',
+                              slug: product.slug,
+                              price: wishlistItem.variant?.price || product.price
+                            };
+                            handleMoveToCart(product._id, wishlistItem.variant?._id, productInfo);
+                          }}
                           disabled={movingToCartId === product._id}
                           className="flex-1 bg-primary text-white py-2 px-4 rounded-md hover:bg-accent transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                         >
@@ -295,7 +316,7 @@ export default function WishlistPage() {
                         </button>
                         
                         <button
-                          onClick={() => handleRemoveFromWishlist(product._id)}
+                          onClick={() => handleRemoveFromWishlist(product._id, wishlistItem.variant?._id)}
                           disabled={removingItemId === product._id}
                           className="px-4 py-2 border border-red-500 text-red-500 rounded-md hover:bg-red-500 hover:text-white transition-colors disabled:opacity-50"
                           title="Remove from wishlist"
@@ -313,7 +334,11 @@ export default function WishlistPage() {
               })}
             </AnimatePresence>
           </motion.div>
-        ) : (
+        ) : null;
+        })()}
+        {(() => {
+          const wishlistItems = getWishlistItems();
+          return wishlistItems.length === 0 ? (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -325,29 +350,17 @@ export default function WishlistPage() {
             </div>
             <h2 className="text-2xl font-medium text-primary mb-2">Your wishlist is empty</h2>
             <p className="text-gray-500 mb-8 max-w-md">
-              {isAuthenticated 
-                ? "Explore our collections and add your favorite items to your wishlist."
-                : "Please log in to view your wishlist or explore our collections to add items."
-              }
+              Explore our collections and add your favorite items to your wishlist.
             </p>
-            <div className="flex gap-4">
-              {!isAuthenticated && (
-                <Link
-                  href="/auth/login"
-                  className="bg-accent text-white py-3 px-8 rounded-md hover:bg-primary transition-colors"
-                >
-                  Log In
-                </Link>
-              )}
-              <Link
-                href="/collections"
-                className="bg-primary text-white py-3 px-8 rounded-md hover:bg-accent transition-colors"
-              >
-                Explore Collections
-              </Link>
-            </div>
+            <Link
+              href="/collections"
+              className="bg-primary text-white py-3 px-8 rounded-md hover:bg-accent transition-colors"
+            >
+              Explore Collections
+            </Link>
           </motion.div>
-        )}
+        ) : null;
+        })()}
 
         {/* Error Display */}
         {error && (

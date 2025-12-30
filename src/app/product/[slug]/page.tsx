@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { FiMinus, FiPlus, FiHeart, FiStar, FiX } from 'react-icons/fi';
 import MainLayout from '@/components/layout/MainLayout';
@@ -107,8 +107,10 @@ export default function ProductDetail() {
   const [isCheckingPincode, setIsCheckingPincode] = useState<boolean>(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [addToCartMessage, setAddToCartMessage] = useState('');
+  const [isAddedToCart, setIsAddedToCart] = useState(false);
   const [isAddingToWishlist, setIsAddingToWishlist] = useState(false);
   const [wishlistMessage, setWishlistMessage] = useState('');
+  const [isAddedToWishlist, setIsAddedToWishlist] = useState(false);
   
   // Review form state
   const [showReviewForm, setShowReviewForm] = useState(false);
@@ -147,7 +149,7 @@ export default function ProductDetail() {
         setReviewStats(response.data.stats);
       }
     } catch (error) {
-      console.error('Error fetching reviews:', error);
+      // Error fetching reviews
     } finally {
       setIsLoadingReviews(false);
     }
@@ -186,7 +188,7 @@ export default function ProductDetail() {
         const productsData = await loadCollectionsProductsData();
         setProducts(productsData);
       } catch (error) {
-        console.error('Error loading product data:', error);
+        // Error loading product data
       } finally {
         setIsLoading(false);
       }
@@ -267,12 +269,6 @@ export default function ProductDetail() {
   };
 
   const handleAddToCart = async () => {
-    if (!isAuthenticated) {
-      // Redirect to login page
-      window.location.href = '/auth/login';
-      return;
-    }
-
     if (!product) {
       setAddToCartMessage('Product not found');
       setTimeout(() => setAddToCartMessage(''), 3000);
@@ -296,18 +292,39 @@ export default function ProductDetail() {
 
       // Find variant ID if size is selected
       let variantId = undefined;
+      let variantPrice = product.price;
       if (selectedSize && product.variants) {
         const variant = product.variants.find((v: any) => v.name === selectedSize);
         if (variant) {
           variantId = (variant as any)._id;
+          variantPrice = variant.price || product.price;
         }
       }
 
-      await addToCart(productId, quantity, variantId);
+      // Get primary image URL
+      const primaryImage = product.images?.find((img: any) => img.isPrimary) || product.images?.[0];
+      const imageUrl = primaryImage?.url || '';
+
+      // Add to cart with product info for local storage
+      await addToCart(
+        productId, 
+        quantity, 
+        variantId,
+        {
+          name: product.name,
+          image: imageUrl,
+          slug: product.slug,
+          price: variantPrice
+        }
+      );
+      
+      setIsAddedToCart(true);
       setAddToCartMessage('Added to cart successfully!');
-      setTimeout(() => setAddToCartMessage(''), 3000);
+      setTimeout(() => {
+        setAddToCartMessage('');
+        setIsAddedToCart(false);
+      }, 3000);
     } catch (error: any) {
-      console.error('Error adding to cart:', error);
       setAddToCartMessage(error.message || 'Failed to add to cart');
       setTimeout(() => setAddToCartMessage(''), 3000);
     } finally {
@@ -316,12 +333,6 @@ export default function ProductDetail() {
   };
 
   const handleAddToWishlist = async () => {
-    if (!isAuthenticated) {
-      // Redirect to login page
-      window.location.href = '/auth/login';
-      return;
-    }
-
     if (!product) {
       setWishlistMessage('Product not found');
       setTimeout(() => setWishlistMessage(''), 3000);
@@ -346,11 +357,29 @@ export default function ProductDetail() {
         }
       }
 
-      await addToWishlist(productId, variantId);
+      // Get primary image URL
+      const primaryImage = product.images?.find((img: any) => img.isPrimary) || product.images?.[0];
+      const imageUrl = primaryImage?.url || '';
+
+      // Add to wishlist with product info for local storage
+      await addToWishlist(
+        productId, 
+        variantId,
+        undefined, // notes
+        {
+          name: product.name,
+          image: imageUrl,
+          slug: product.slug
+        }
+      );
+      
+      setIsAddedToWishlist(true);
       setWishlistMessage('Added to wishlist successfully!');
-      setTimeout(() => setWishlistMessage(''), 3000);
+      setTimeout(() => {
+        setWishlistMessage('');
+        setIsAddedToWishlist(false);
+      }, 3000);
     } catch (error: any) {
-      console.error('Error adding to wishlist:', error);
       setWishlistMessage(error.message || 'Failed to add to wishlist');
       setTimeout(() => setWishlistMessage(''), 3000);
     } finally {
@@ -360,7 +389,8 @@ export default function ProductDetail() {
 
   const handleSubmitReview = async () => {
     if (!isAuthenticated) {
-      window.location.href = '/auth/login';
+      // Redirect to home page (user can open login modal from there)
+      window.location.href = '/';
       return;
     }
 
@@ -421,7 +451,6 @@ export default function ProductDetail() {
         throw new Error(response.message || 'Failed to submit review');
       }
     } catch (error: any) {
-      console.error('Error submitting review:', error);
       setReviewMessage(error.message || 'Failed to submit review');
       setTimeout(() => setReviewMessage(''), 3000);
     } finally {
@@ -902,77 +931,169 @@ export default function ProductDetail() {
               </div>
               
               {/* Add to Cart Message */}
-              {addToCartMessage && (
-                <div className={`mb-4 p-3 rounded-lg text-sm font-medium ${
-                  addToCartMessage.includes('successfully') 
-                    ? 'bg-green-50 text-green-700 border border-green-200' 
-                    : 'bg-red-50 text-red-700 border border-red-200'
-                }`}>
-                  {addToCartMessage}
-                </div>
-              )}
+              <AnimatePresence>
+                {addToCartMessage && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                    className={`mb-4 p-3 rounded-lg text-sm font-medium ${
+                      addToCartMessage.includes('successfully') 
+                        ? 'bg-green-50 text-green-700 border border-green-200' 
+                        : 'bg-red-50 text-red-700 border border-red-200'
+                    }`}
+                  >
+                    {addToCartMessage}
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* Wishlist Message */}
-              {wishlistMessage && (
-                <div className={`mb-4 p-3 rounded-lg text-sm font-medium ${
-                  wishlistMessage.includes('successfully') 
-                    ? 'bg-green-50 text-green-700 border border-green-200' 
-                    : 'bg-red-50 text-red-700 border border-red-200'
-                }`}>
-                  {wishlistMessage}
-                </div>
-              )}
+              <AnimatePresence>
+                {wishlistMessage && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                    className={`mb-4 p-3 rounded-lg text-sm font-medium ${
+                      wishlistMessage.includes('successfully') 
+                        ? 'bg-green-50 text-green-700 border border-green-200' 
+                        : 'bg-red-50 text-red-700 border border-red-200'
+                    }`}
+                  >
+                    {wishlistMessage}
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-6 sm:mb-8">
-                <Button 
-                  variant="secondary" 
-                  size="lg" 
-                  fullWidth 
-                  className="py-3 sm:py-4"
-                  onClick={handleAddToCart}
-                  disabled={(() => {
-                    const sizeRequired = product.variants && product.variants.length > 0 && !selectedSize;
-                    const outOfStock = selectedSize && getStockStatus()?.status === 'out';
-                    const stockStatusOut = product.stockStatus === 'out-of-stock' || (product as any).stockStatus === 'out-of-stock';
-                    const notActive = !(product.isActive ?? true);
-                    const adding = isAddingToCart;
-                    const cartLoadingState = cartLoading;
-                    
-                    return sizeRequired || outOfStock || stockStatusOut || notActive || adding || cartLoadingState;
-                  })()}
+                <motion.div
+                  className="flex-1"
+                  animate={isAddedToCart ? {
+                    scale: [1, 1.02, 1],
+                  } : {}}
+                  transition={isAddedToCart ? {
+                    duration: 0.5,
+                    times: [0, 0.5, 1],
+                  } : {}}
                 >
-                  {isAddingToCart || cartLoading ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Adding to Cart...
-                    </span>
-                  ) : (product.variants && product.variants.length > 0 && !selectedSize) ? (
-                    'Select Size'
-                  ) : getStockStatus()?.status === 'out' || product.stockStatus === 'out-of-stock' ? (
-                    'Out of Stock'
-                  ) : (
-                    'Add to Cart'
-                  )}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="lg" 
-                  className="flex items-center justify-center gap-2 py-3 sm:py-4"
-                  onClick={handleAddToWishlist}
-                  disabled={isAddingToWishlist || wishlistLoading}
+                  <Button 
+                    variant="secondary" 
+                    size="lg" 
+                    fullWidth 
+                    className={`py-3 sm:py-4 transition-all duration-200 ${
+                      isAddedToCart ? 'bg-green-500 hover:bg-green-600' : ''
+                    }`}
+                    onClick={handleAddToCart}
+                    disabled={(() => {
+                      const sizeRequired = product.variants && product.variants.length > 0 && !selectedSize;
+                      const outOfStock = selectedSize && getStockStatus()?.status === 'out';
+                      const stockStatusOut = product.stockStatus === 'out-of-stock' || (product as any).stockStatus === 'out-of-stock';
+                      const notActive = !(product.isActive ?? true);
+                      const adding = isAddingToCart;
+                      const cartLoadingState = cartLoading;
+                      
+                      return sizeRequired || outOfStock || stockStatusOut || notActive || adding || cartLoadingState;
+                    })()}
+                  >
+                    <AnimatePresence mode="wait">
+                      {isAddedToCart ? (
+                        <motion.span
+                          key="added"
+                          initial={{ opacity: 0, y: -5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 5 }}
+                          className="flex items-center justify-center gap-2"
+                        >
+                          <motion.div
+                            initial={{ scale: 0, rotate: -180 }}
+                            animate={{ scale: 1, rotate: 0 }}
+                            transition={{ type: "spring", stiffness: 200, delay: 0.1 }}
+                          >
+                            <FiCheck className="w-4 h-4" />
+                          </motion.div>
+                          Added to Cart
+                        </motion.span>
+                      ) : isAddingToCart || cartLoading ? (
+                        <motion.span
+                          key="adding"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="flex items-center justify-center gap-2"
+                        >
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          Adding to Cart...
+                        </motion.span>
+                      ) : (product.variants && product.variants.length > 0 && !selectedSize) ? (
+                        <motion.span key="select-size">Select Size</motion.span>
+                      ) : getStockStatus()?.status === 'out' || product.stockStatus === 'out-of-stock' ? (
+                        <motion.span key="out-of-stock">Out of Stock</motion.span>
+                      ) : (
+                        <motion.span key="add-to-cart">Add to Cart</motion.span>
+                      )}
+                    </AnimatePresence>
+                  </Button>
+                </motion.div>
+                <motion.div
+                  animate={isAddedToWishlist ? {
+                    scale: [1, 1.1, 1],
+                  } : {}}
+                  transition={isAddedToWishlist ? {
+                    duration: 0.6,
+                    times: [0, 0.5, 1],
+                  } : {}}
                 >
-                  {isAddingToWishlist || wishlistLoading ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <div className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-                      Adding...
-                    </span>
-                  ) : (
-                    <>
-                  <FiHeart className="w-4 h-4" /> Add to Wishlist
-                    </>
-                  )}
-                </Button>
+                  <Button 
+                    variant="outline" 
+                    size="lg" 
+                    className={`flex items-center justify-center gap-2 py-3 sm:py-4 transition-all duration-200 ${
+                      isAddedToWishlist ? 'border-accent bg-accent/10' : ''
+                    }`}
+                    onClick={handleAddToWishlist}
+                    disabled={isAddingToWishlist || wishlistLoading}
+                  >
+                    <AnimatePresence mode="wait">
+                      {isAddingToWishlist || wishlistLoading ? (
+                        <motion.span
+                          key="adding"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="flex items-center justify-center gap-2"
+                        >
+                          <div className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+                          Adding...
+                        </motion.span>
+                      ) : (
+                        <motion.span
+                          key="default"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="flex items-center justify-center gap-2"
+                        >
+                          <motion.div
+                            animate={isAddedToWishlist ? {
+                              scale: [1, 1.3, 1],
+                              rotate: [0, 10, -10, 0],
+                            } : {}}
+                            transition={isAddedToWishlist ? {
+                              duration: 0.6,
+                              times: [0, 0.3, 0.6, 1],
+                            } : {}}
+                          >
+                            <FiHeart className={`w-4 h-4 ${isAddedToWishlist ? 'fill-current text-accent' : ''}`} />
+                          </motion.div>
+                          {isAddedToWishlist ? 'Added to Wishlist' : 'Add to Wishlist'}
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                  </Button>
+                </motion.div>
               </div>
             </motion.div>
           </div>
@@ -1247,3 +1368,4 @@ export default function ProductDetail() {
     </MainLayout>
   );
 }
+

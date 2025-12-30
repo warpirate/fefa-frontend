@@ -7,6 +7,7 @@ import { SearchProvider } from "@/contexts/SearchContext";
 import { DataProvider } from "@/contexts/DataContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { WishlistProvider } from "@/contexts/WishlistContext";
+import { LoginModalProvider } from "@/contexts/LoginModalContext";
 import "@/styles/base/index.css";
 
 const poppins = Poppins({
@@ -56,13 +57,15 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} storageKey="fefa-theme">
           <DataProvider>
             <AuthProvider>
-              <CartProvider>
-                <WishlistProvider>
-                  <SearchProvider>
-                    {children}
-                  </SearchProvider>
-                </WishlistProvider>
-              </CartProvider>
+              <LoginModalProvider>
+                <CartProvider>
+                  <WishlistProvider>
+                    <SearchProvider>
+                      {children}
+                    </SearchProvider>
+                  </WishlistProvider>
+                </CartProvider>
+              </LoginModalProvider>
             </AuthProvider>
           </DataProvider>
         </ThemeProvider>

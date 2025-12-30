@@ -29,9 +29,9 @@ interface UserData {
 interface EditModalProps {
   isOpen: boolean;
   onClose: () => void;
-  data: any; // Can be UserData, Product, Category, or Order
+  data: any; // Can be UserData, Product, Category, Collection, or Order
   onSave: (updatedData: any) => void;
-  type: 'user' | 'product' | 'category' | 'order' | 'banner';
+  type: 'user' | 'product' | 'category' | 'collection' | 'order' | 'banner';
   loading?: boolean;
 }
 
@@ -312,6 +312,20 @@ export default function EditModal({ isOpen, onClose, data, onSave, type, loading
       return;
     }
 
+    // Handle collection with image upload
+    if (type === 'collection' && formData.imageFile) {
+      const formDataToSend = new FormData();
+      formDataToSend.append('name', formData.name.trim());
+      formDataToSend.append('slug', formData.slug.trim());
+      formDataToSend.append('description', formData.description || '');
+      formDataToSend.append('isActive', formData.isActive.toString());
+      formDataToSend.append('sortOrder', (formData.sortOrder || 0).toString());
+      formDataToSend.append('image', formData.imageFile);
+      
+      onSave(formDataToSend);
+      return;
+    }
+
     // Handle banner with image upload
     if (type === 'banner' && formData.imageFile) {
       const formDataToSend = new FormData();
@@ -332,8 +346,8 @@ export default function EditModal({ isOpen, onClose, data, onSave, type, loading
     // Prepare data for submission
     const updatedData: any = { ...formData };
     
-    // Remove imageFile from category/banner data if no new image
-    if (type === 'category' || type === 'banner') {
+    // Remove imageFile from category/collection/banner data if no new image
+    if (type === 'category' || type === 'collection' || type === 'banner') {
       delete updatedData.imageFile;
     }
     
@@ -1016,6 +1030,30 @@ export default function EditModal({ isOpen, onClose, data, onSave, type, loading
     e.target.value = '';
   };
 
+  const handleCollectionImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select only image files');
+        return;
+      }
+
+      // Validate file size (10MB max)
+      if (file.size > 10 * 1024 * 1024) {
+        alert('Image size must be less than 10MB');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setFormData((prev: any) => ({ ...prev, image: e.target?.result as string, imageFile: file }));
+      };
+      reader.readAsDataURL(file);
+    }
+    e.target.value = '';
+  };
+
   const handleBannerImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -1323,6 +1361,126 @@ export default function EditModal({ isOpen, onClose, data, onSave, type, loading
     </form>
   );
 
+  const renderCollectionForm = () => (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Collection Image */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Collection Image
+        </label>
+        <div className="flex items-center space-x-4">
+          <div className="flex-shrink-0">
+            <img
+              className="h-24 w-24 rounded-lg object-cover border-2 border-gray-200"
+              src={formData.image || '/placeholder-collection.png'}
+              alt="Collection"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = '/placeholder-collection.png';
+              }}
+            />
+          </div>
+          <div className="flex-1">
+            <label
+              htmlFor="collection-image-upload-edit"
+              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 cursor-pointer"
+            >
+              <ImageIcon className="h-4 w-4 mr-2" />
+              {formData.imageFile ? 'Change Image' : 'Upload Image'}
+            </label>
+            <input
+              id="collection-image-upload-edit"
+              name="collection-image-upload"
+              type="file"
+              className="sr-only"
+              accept="image/*"
+              onChange={handleCollectionImageChange}
+            />
+            {formData.imageFile && (
+              <p className="mt-2 text-xs text-green-600">New image selected</p>
+            )}
+            <p className="mt-1 text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Basic Information */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Collection Name *
+          </label>
+          <input
+            type="text"
+            name="name"
+            value={formData.name || ''}
+            onChange={handleInputChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Slug *
+          </label>
+          <input
+            type="text"
+            name="slug"
+            value={formData.slug || ''}
+            onChange={handleInputChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            required
+          />
+        </div>
+      </div>
+
+      {/* Sort Order and Status */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Sort Order *
+          </label>
+          <input
+            type="number"
+            name="sortOrder"
+            value={formData.sortOrder || ''}
+            onChange={(e) => handleDirectInputChange('sortOrder', parseInt(e.target.value) || 0)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Status *
+          </label>
+          <select
+            name="isActive"
+            value={formData.isActive ? 'active' : 'inactive'}
+            onChange={(e) => handleDirectInputChange('isActive', e.target.value === 'active')}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            required
+          >
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Description */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Description
+        </label>
+        <textarea
+          name="description"
+          value={formData.description || ''}
+          onChange={handleInputChange}
+          rows={4}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        />
+      </div>
+    </form>
+  );
+
   const renderForm = () => {
     switch (type) {
       case 'user':
@@ -1331,6 +1489,8 @@ export default function EditModal({ isOpen, onClose, data, onSave, type, loading
         return renderProductForm();
       case 'category':
         return renderCategoryForm();
+      case 'collection':
+        return renderCollectionForm();
       case 'banner':
         return renderBannerForm();
       default:

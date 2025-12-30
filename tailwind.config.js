@@ -80,6 +80,8 @@ module.exports = {
       fontFamily: {
         'script': ['var(--font-dancing-script)', 'cursive'],
         'sans': ['var(--font-poppins)', 'sans-serif'],
+        'playfair': ['Playfair Display', 'serif'],
+        'cormorant': ['Cormorant Garamond', 'serif'],
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',

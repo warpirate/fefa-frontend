@@ -120,7 +120,6 @@ export default function Home() {
           setFeaturedProducts(featured);
         }
       } catch (error) {
-        console.error('Failed to load featured products:', error);
         setFeaturedProducts([]);
       } finally {
         setLoadingFeaturedProducts(false);
@@ -158,18 +157,12 @@ export default function Home() {
     };
   }, [featuredProductsSliderRef]);
 
-  // Handle authentication redirect
+  // Handle authentication redirect for admin users only
   useEffect(() => {
-    if (!authLoading) {
-      if (!isAuthenticated) {
-        // Redirect unauthenticated users to login page
-        router.push('/auth/login');
-        return;
-      } else if (isAdmin) {
-        // Redirect admin users to admin dashboard
-        router.push('/admin');
-        return;
-      }
+    if (!authLoading && isAuthenticated && isAdmin) {
+      // Redirect admin users to admin dashboard
+      router.push('/admin');
+      return;
     }
   }, [isAuthenticated, authLoading, isAdmin, router]);
 
@@ -185,9 +178,8 @@ export default function Home() {
     );
   }
 
-  // Don't render the home page if user is not authenticated or is admin
-  // (they will be redirected by useEffect)
-  if (!isAuthenticated || isAdmin) {
+  // Don't render the home page if user is admin (they will be redirected by useEffect)
+  if (isAdmin) {
     return null;
   }
 
@@ -364,7 +356,7 @@ export default function Home() {
                     {/* Dark overlay for better text readability */}
                     <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors" />
                     <div className="absolute inset-0 flex items-center justify-center z-20">
-                      <h3 className="text-xs xs:text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl font-medium text-white text-center px-1 xs:px-2 sm:px-3 group-hover:text-accent transition-colors drop-shadow-lg">
+                      <h3 className="text-xs xs:text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl !font-cormorant font-semibold text-white text-center px-1 xs:px-2 sm:px-3 group-hover:text-accent transition-colors drop-shadow-lg">
                         {category.name}
                       </h3>
                     </div>
@@ -430,7 +422,7 @@ export default function Home() {
                           y: currentSlide === index ? 0 : 30
                         }}
                         transition={{ duration: 0.6, delay: 0.2 }}
-                        className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-6xl font-script text-amber-300 mb-2 xs:mb-3 sm:mb-4 leading-tight"
+                        className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-6xl !font-cormorant text-amber-300 mb-2 xs:mb-3 sm:mb-4 leading-tight"
                       >
                         {item.title}
                       </motion.h1>
@@ -498,7 +490,7 @@ export default function Home() {
             viewport={{ once: true }}
             className="text-center mb-8"
           >
-            <h2 className="text-3xl xs:text-4xl sm:text-5xl md:text-6xl font-script text-primary mb-4">WHY CHOOSE US</h2>
+            <h2 className="text-3xl xs:text-4xl sm:text-5xl md:text-6xl !font-cormorant text-primary mb-4">WHY CHOOSE US</h2>
             <p className="text-dark-gray max-w-2xl mx-auto text-sm xs:text-base sm:text-lg">
               Discover what makes our jewelry special
             </p>
@@ -574,7 +566,7 @@ export default function Home() {
             viewport={{ once: true }}
             className="text-center mb-8 xs:mb-10 sm:mb-12"
           >
-            <h2 className="text-3xl xs:text-4xl sm:text-5xl md:text-6xl font-script text-primary mb-3 xs:mb-4">OUR COLLECTIONS</h2>
+            <h2 className="text-3xl xs:text-4xl sm:text-5xl md:text-6xl !font-cormorant text-primary mb-3 xs:mb-4">OUR COLLECTIONS</h2>
             <p className="text-dark-gray max-w-2xl mx-auto text-sm xs:text-base sm:text-lg">
               Discover our carefully curated collections of premium handcrafted jewelry
             </p>
@@ -616,6 +608,7 @@ export default function Home() {
                                 fill
                                 className="object-cover"
                                 sizes="(max-width: 475px) 160px, (max-width: 640px) 176px, (max-width: 768px) 192px, (max-width: 1024px) 208px, (max-width: 1280px) 240px, 320px"
+                                priority={index === 0 || index === 1} // Add priority to first 2 category images (above the fold)
                               />
                     {/* Light overlay for better text readability */}
                     <div className="absolute inset-0 bg-black/20" />
@@ -627,7 +620,7 @@ export default function Home() {
                                   whileInView={{ opacity: 1, y: 0 }}
                                   transition={{ duration: 0.6, delay: 0.3 }}
                                   viewport={{ once: true }}
-                                  className="text-sm xs:text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl font-script mb-1 xs:mb-1 sm:mb-2 group-hover:scale-110 transition-transform duration-300 text-center leading-tight"
+                                  className="text-sm xs:text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl !font-cormorant font-semibold mb-1 xs:mb-1 sm:mb-2 group-hover:scale-110 transition-transform duration-300 text-center leading-tight"
                                 >
                                   {category.name}
                                 </motion.h3>
@@ -659,7 +652,7 @@ export default function Home() {
             viewport={{ once: true }}
             className="text-center mb-8 xs:mb-10 sm:mb-12"
           >
-            <h2 className="text-3xl xs:text-4xl sm:text-5xl md:text-5xl font-script text-primary mb-3 xs:mb-4">FEATURED PRODUCTS</h2>
+            <h2 className="text-3xl xs:text-4xl sm:text-5xl md:text-5xl !font-cormorant text-primary mb-3 xs:mb-4">FEATURED PRODUCTS</h2>
             <p className="text-dark-gray max-w-2xl mx-auto text-sm xs:text-base sm:text-lg">
               Discover our most popular jewelry pieces, handcrafted with love and attention to detail
             </p>
@@ -779,7 +772,7 @@ export default function Home() {
             viewport={{ once: true }}
             className="text-center mb-8 xs:mb-10 sm:mb-12"
           >
-            <h2 className="text-3xl xs:text-4xl sm:text-5xl md:text-5xl font-script text-primary mb-3 xs:mb-4">TRENDING LOOKS</h2>
+            <h2 className="text-3xl xs:text-4xl sm:text-5xl md:text-5xl !font-cormorant text-primary mb-3 xs:mb-4">TRENDING LOOKS</h2>
           </motion.div>
           
           {/* Content Grid */}
@@ -810,7 +803,7 @@ export default function Home() {
               className="space-y-4 xs:space-y-5 sm:space-y-6 order-2 lg:order-2 flex flex-col justify-center"
             >
               <div>
-                <h3 className="text-2xl xs:text-3xl sm:text-3xl md:text-4xl font-script text-primary mb-3 xs:mb-4">
+                <h3 className="text-2xl xs:text-3xl sm:text-3xl md:text-4xl !font-cormorant text-primary mb-3 xs:mb-4">
                   Discover What's Hot
                 </h3>
                 <p className="text-dark-gray text-sm xs:text-base sm:text-lg leading-relaxed mb-4 xs:mb-5 sm:mb-6">
@@ -883,7 +876,7 @@ export default function Home() {
             viewport={{ once: true }}
             className="text-center mb-8 xs:mb-10 sm:mb-12"
           >
-            <h2 className="text-3xl xs:text-4xl sm:text-5xl md:text-5xl font-script text-primary mb-3 xs:mb-4">CUSTOMER LOVE</h2>
+            <h2 className="text-3xl xs:text-4xl sm:text-5xl md:text-5xl !font-cormorant text-primary mb-3 xs:mb-4">CUSTOMER LOVE</h2>
             <p className="text-dark-gray max-w-2xl mx-auto text-sm xs:text-base sm:text-lg">
               See why thousands of customers choose FEFA for their jewelry needs
             </p>
@@ -986,7 +979,7 @@ export default function Home() {
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
           >
-          <h2 className="text-2xl xs:text-3xl sm:text-4xl font-script text-accent mb-3 xs:mb-4">Join Our Community</h2>
+          <h2 className="text-2xl xs:text-3xl sm:text-4xl !font-cormorant text-accent mb-3 xs:mb-4">Join Our Community</h2>
           <p className="max-w-lg xs:max-w-xl mx-auto mb-6 xs:mb-8 text-sm xs:text-base">
             Subscribe to receive updates on new collections, exclusive offers, and jewelry care tips.
           </p>
