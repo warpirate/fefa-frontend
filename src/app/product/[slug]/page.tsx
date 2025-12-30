@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
-import { FiMinus, FiPlus, FiHeart, FiStar, FiX } from 'react-icons/fi';
+import { FiMinus, FiPlus, FiHeart, FiStar, FiX, FiCheck } from 'react-icons/fi';
 import MainLayout from '@/components/layout/MainLayout';
 import Button from '@/components/ui/Button';
 import ProductCard from '@/components/product/ProductCard';
