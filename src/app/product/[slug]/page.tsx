@@ -297,7 +297,7 @@ export default function ProductDetail() {
         const variant = product.variants.find((v: any) => v.name === selectedSize);
         if (variant) {
           variantId = (variant as any)._id;
-          variantPrice = variant.price || product.price;
+          variantPrice = product.price + (variant.priceAdjustment || 0);
         }
       }
 
