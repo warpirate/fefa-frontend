@@ -230,8 +230,12 @@ export default function ProductCard({
         setNotificationMessage('Removed from wishlist');
       } else {
         // Get primary image URL
-        const primaryImage = images?.find(img => img.isPrimary) || images?.[0];
-        const imageUrl = primaryImage?.url || '';
+        const primaryImage = images?.find((img): img is ProductImage => 
+          typeof img === 'object' && 'isPrimary' in img && img.isPrimary
+        ) || images?.[0];
+        const imageUrl = (primaryImage && typeof primaryImage === 'object' && 'url' in primaryImage) 
+          ? primaryImage.url 
+          : '';
 
         // Add to wishlist with product info for local storage
         await addToWishlist(
@@ -273,8 +277,12 @@ export default function ProductCard({
       }
 
       // Get primary image URL
-      const primaryImage = images?.find(img => img.isPrimary) || images?.[0];
-      const imageUrl = primaryImage?.url || '';
+      const primaryImage = images?.find((img): img is ProductImage => 
+        typeof img === 'object' && 'isPrimary' in img && img.isPrimary
+      ) || images?.[0];
+      const imageUrl = (primaryImage && typeof primaryImage === 'object' && 'url' in primaryImage) 
+        ? primaryImage.url 
+        : '';
 
       // Add to cart with product info for local storage
       await addToCart(
