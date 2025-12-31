@@ -489,27 +489,40 @@ export default function Home() {
       </section>
 
       {/* Features Section */}
-      <section className="pt-16 pb-8 bg-soft-pink-100 dark:bg-[#1F2937] overflow-hidden transition-colors duration-300">
+      <section className="pt-12 pb-8 bg-white dark:bg-[#0a0a0a] overflow-hidden transition-colors duration-300">
         <div className="container mx-auto px-4">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
-            className="text-center mb-8"
+            className="text-center mb-6"
           >
-            <h2 className="text-3xl xs:text-4xl sm:text-5xl md:text-6xl font-script text-primary mb-4">WHY CHOOSE US</h2>
-            <p className="text-dark-gray max-w-2xl mx-auto text-sm xs:text-base sm:text-lg">
+            <h2 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl font-script text-primary mb-2">WHY CHOOSE US</h2>
+            <p className="text-dark-gray max-w-2xl mx-auto text-xs xs:text-sm sm:text-base">
               Discover what makes our jewelry special
             </p>
           </motion.div>
           
-          {/* Features container with horizontal scroll for mobile/tablet, grid for desktop */}
-          <div 
-            id="features-container"
-            className="flex gap-3 xs:gap-4 sm:gap-5 md:gap-6 lg:hidden overflow-x-auto scrollbar-hide pb-2"
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-          >
+          {/* Features container with horizontal scroll for all screen sizes */}
+          <div className="w-full flex justify-center lg:overflow-hidden">
+            <div 
+              id="features-container"
+              className="flex gap-4 xs:gap-5 sm:gap-6 md:gap-6 lg:gap-8 overflow-x-auto scrollbar-hide pb-4 cursor-grab active:cursor-grabbing lg:justify-center"
+              style={{ 
+                scrollbarWidth: 'none', 
+                msOverflowStyle: 'none',
+                scrollBehavior: 'smooth',
+                touchAction: 'pan-x'
+              }}
+              onMouseDown={handleMouseDown}
+              onMouseLeave={handleMouseLeave}
+              onMouseUp={handleMouseUp}
+              onMouseMove={handleMouseMove}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
             {safeFeatures.map((feature: Feature, index: number) => (
               <motion.div
                 key={feature.id}
@@ -517,49 +530,24 @@ export default function Home() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 viewport={{ once: true }}
-                className="group relative bg-gradient-to-br from-soft-pink-100 to-soft-pink-200 rounded-2xl xs:rounded-3xl p-3 xs:p-4 sm:p-5 md:p-6 text-center hover:scale-105 transition-all duration-300 hover:shadow-lg flex-shrink-0 w-32 xs:w-36 sm:w-40 md:w-44"
+                className="relative bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-2 border-purple-100 dark:border-purple-800/30 rounded-xl xs:rounded-2xl p-3 xs:p-4 sm:p-4 md:p-5 text-center flex-shrink-0 w-36 xs:w-40 sm:w-44 md:w-48 lg:w-52"
               >
                 <div className="flex flex-col items-center">
-                  <div className="w-8 h-8 xs:w-10 xs:h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 bg-gradient-to-br from-teal-500 to-teal-700 rounded-full flex items-center justify-center mb-2 xs:mb-3 sm:mb-3 md:mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                    <svg className="w-4 h-4 xs:w-5 xs:h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-white drop-shadow-sm" fill="currentColor" viewBox="0 0 24 24">
+                  <div className="w-10 h-10 xs:w-12 xs:h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-gradient-to-br from-primary via-purple-600 to-pink-500 rounded-full flex items-center justify-center mb-2 xs:mb-2.5 sm:mb-3 shadow-lg">
+                    <svg className="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-white drop-shadow-sm" fill="currentColor" viewBox="0 0 24 24">
                       <path d={feature.icon}/>
                     </svg>
                   </div>
-                  <div className="text-amber-500 font-semibold text-xs xs:text-xs sm:text-sm md:text-sm leading-tight drop-shadow-sm">
-                    {feature.description.split(' ').map((word: string, i: number) => (
-                      <div key={i}>{word}</div>
-                    ))}
-                  </div>
+                  <h3 className="text-primary dark:text-purple-300 font-bold text-base xs:text-base sm:text-lg md:text-lg mb-1 xs:mb-1.5 leading-tight">
+                    {feature.title}
+                  </h3>
+                  <p className="text-dark-gray dark:text-gray-300 text-sm xs:text-sm sm:text-base md:text-base leading-snug px-1">
+                    {feature.description}
+                  </p>
                 </div>
               </motion.div>
             ))}
-          </div>
-          
-          {/* Desktop grid layout */}
-          <div className="hidden lg:grid lg:grid-cols-5 gap-6">
-            {safeFeatures.map((feature: Feature, index: number) => (
-              <motion.div
-                key={feature.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                viewport={{ once: true }}
-                className="group relative bg-gradient-to-br from-soft-pink-100 to-soft-pink-200 rounded-3xl p-6 text-center hover:scale-105 transition-all duration-300 hover:shadow-lg"
-              >
-                <div className="flex flex-col items-center">
-                  <div className="w-16 h-16 bg-gradient-to-br from-teal-500 to-teal-700 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                    <svg className="w-8 h-8 text-white drop-shadow-sm" fill="currentColor" viewBox="0 0 24 24">
-                      <path d={feature.icon}/>
-                    </svg>
-                  </div>
-                  <div className="text-amber-500 font-semibold text-sm leading-tight drop-shadow-sm">
-                    {feature.description.split(' ').map((word: string, i: number) => (
-                      <div key={i}>{word}</div>
-                    ))}
-                  </div>
-                </div>
-          </motion.div>
-            ))}
+            </div>
           </div>
         </div>
       </section>
