@@ -168,6 +168,13 @@ export default function ProductsPage() {
       if (result.success && result.data) {
         // Use the full product data from backend which includes the images array
         const fullProduct = result.data;
+        console.log('Full product data from backend:', {
+          id: fullProduct._id || fullProduct.id,
+          name: fullProduct.name,
+          occasions: fullProduct.occasions,
+          occasionsType: typeof fullProduct.occasions,
+          occasionsIsArray: Array.isArray(fullProduct.occasions)
+        });
         const editProduct = {
           id: fullProduct._id || fullProduct.id,
           name: fullProduct.name,
@@ -186,6 +193,7 @@ export default function ProductsPage() {
           height: fullProduct.dimensions?.height,
           dimensionUnit: fullProduct.dimensions?.unit || 'cm',
           tags: fullProduct.tags,
+          occasions: fullProduct.occasions || [], // Include occasions from backend
           isActive: fullProduct.isActive !== false,
           isFeatured: fullProduct.isFeatured || false,
           isDigital: fullProduct.isDigital || false,
@@ -214,6 +222,7 @@ export default function ProductsPage() {
           height: product.height,
           dimensionUnit: product.dimensionUnit || 'cm',
           tags: product.tags,
+          occasions: product.occasions || [], // Include occasions from product data
           isActive: product.status === 'active',
           isFeatured: product.featured,
           isDigital: product.isDigital,
@@ -269,7 +278,8 @@ export default function ProductsPage() {
         'inventory.quantity': productData.stock,
         weight: productData.weight,
         dimensions: productData.dimensions,
-        tags: productData.tags
+        tags: productData.tags,
+        occasions: productData.occasions || []
       };
       
       // Update images array if existing images were modified (only if provided)

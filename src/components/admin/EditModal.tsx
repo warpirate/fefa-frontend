@@ -14,6 +14,7 @@ import {
   MdImage as ImageIcon
 } from 'react-icons/md';
 import adminService from '../../services/adminService';
+import { CollectionOccasion } from '../../types/data';
 
 interface UserData {
   id: string;
@@ -38,6 +39,8 @@ interface EditModalProps {
 export default function EditModal({ isOpen, onClose, data, onSave, type, loading = false }: EditModalProps) {
   const [formData, setFormData] = useState<any>({});
   const [categories, setCategories] = useState<any[]>([]);
+  const [occasions, setOccasions] = useState<CollectionOccasion[]>([]);
+  const [selectedOccasions, setSelectedOccasions] = useState<string[]>([]);
   const [existingImages, setExistingImages] = useState<Array<{ url: string; publicId?: string; isPrimary?: boolean; _id?: string }>>([]);
   const [newImagePreviews, setNewImagePreviews] = useState<Array<{ file: File; preview: string }>>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -64,6 +67,7 @@ export default function EditModal({ isOpen, onClose, data, onSave, type, loading
         height: data.height || '',
         dimensionUnit: data.dimensionUnit || 'cm',
         tags: Array.isArray(data.tags) ? data.tags.join(', ') : (data.tags || ''),
+        occasions: Array.isArray(data.occasions) ? data.occasions : [],
         isActive: data.status === 'active' || data.isActive !== false,
         isFeatured: data.featured || data.isFeatured || false,
         isDigital: data.isDigital || false,
@@ -101,12 +105,46 @@ export default function EditModal({ isOpen, onClose, data, onSave, type, loading
       }
       setNewImagePreviews([]);
       setFailedImageUrls(new Set()); // Reset failed images when data changes
+      
+      // Initialize selected occasions from data
+      if (type === 'product') {
+        // Handle occasions - check multiple possible locations
+        let productOccasions: string[] = [];
+        
+        if (data.occasions) {
+          if (Array.isArray(data.occasions)) {
+            productOccasions = data.occasions.filter(Boolean); // Filter out any empty values
+          } else if (typeof data.occasions === 'string') {
+            // Try to parse if it's a JSON string
+            try {
+              const parsed = JSON.parse(data.occasions);
+              if (Array.isArray(parsed)) {
+                productOccasions = parsed.filter(Boolean);
+              }
+            } catch (e) {
+              // If parsing fails, treat as empty
+              productOccasions = [];
+            }
+          }
+        }
+        
+        console.log('EditModal - Initializing occasions:', {
+          dataOccasions: data.occasions,
+          productOccasions,
+          type
+        });
+        
+        setSelectedOccasions(productOccasions);
+      } else {
+        setSelectedOccasions([]);
+      }
     }
-  }, [data]);
+  }, [data, type]);
 
   useEffect(() => {
     if (isOpen && type === 'product') {
       loadCategories();
+      loadOccasions();
     }
   }, [isOpen, type]);
 
@@ -122,6 +160,31 @@ export default function EditModal({ isOpen, onClose, data, onSave, type, loading
     } catch (err) {
       console.error('Error loading categories:', err);
     }
+  };
+
+  const loadOccasions = async () => {
+    try {
+      const result = await adminService.getOccasions();
+      if (result.success) {
+        setOccasions(result.data);
+      } else {
+        console.error('Error loading occasions:', result.error);
+        setOccasions([]);
+      }
+    } catch (err) {
+      console.error('Error loading occasions:', err);
+      setOccasions([]);
+    }
+  };
+
+  const handleOccasionChange = (occasionValue: string) => {
+    setSelectedOccasions(prev => {
+      if (prev.includes(occasionValue)) {
+        return prev.filter(occ => occ !== occasionValue);
+      } else {
+        return [...prev, occasionValue];
+      }
+    });
   };
 
   // Generate slug from name
@@ -286,6 +349,7 @@ export default function EditModal({ isOpen, onClose, data, onSave, type, loading
     if (formData.length && parseFloat(formData.length) < 0) newErrors.length = 'Length cannot be negative';
     if (formData.width && parseFloat(formData.width) < 0) newErrors.width = 'Width cannot be negative';
     if (formData.height && parseFloat(formData.height) < 0) newErrors.height = 'Height cannot be negative';
+    if (selectedOccasions.length === 0) newErrors.occasions = 'At least one collection/occasion is required';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -352,10 +416,12 @@ export default function EditModal({ isOpen, onClose, data, onSave, type, loading
       };
     }
     
-    // Add image data for product type
+    // Add image data and occasions for product type
     if (type === 'product') {
       updatedData.existingImages = existingImages;
       updatedData.newImageFiles = newImagePreviews.map(img => img.file);
+      // Occasions are required, so always include them
+      updatedData.occasions = selectedOccasions;
     }
     
     onSave(updatedData);
@@ -719,6 +785,41 @@ export default function EditModal({ isOpen, onClose, data, onSave, type, loading
           </select>
           {errors.category && <p className="mt-1 text-sm text-red-600">{errors.category}</p>}
         </div>
+      </div>
+
+      {/* Occasions Multi-Select - Tag Style */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Collections / Occasions <span className="text-red-500">*</span>
+        </label>
+        {occasions.length === 0 ? (
+          <p className="text-sm text-gray-500">Loading occasions...</p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {occasions.map((occasion) => {
+              const isSelected = selectedOccasions.includes(occasion.value);
+              return (
+                <button
+                  key={occasion.value}
+                  type="button"
+                  onClick={() => handleOccasionChange(occasion.value)}
+                  className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
+                    isSelected
+                      ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300'
+                  } ${errors.occasions ? 'border-red-500' : ''}`}
+                >
+                  <span>{occasion.name}</span>
+                  {isSelected && (
+                    <Close className="ml-2 w-4 h-4 hover:scale-110 transition-transform" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+        {errors.occasions && <p className="mt-1 text-sm text-red-600">{errors.occasions}</p>}
+        <p className="mt-2 text-xs text-gray-500">Click on tags to select/deselect occasions</p>
       </div>
 
       {/* Pricing */}

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { MdClose as Close, MdCloudUpload as Upload, MdImage as ImageIcon } from 'react-icons/md';
 import Modal from './Modal';
 import adminService from '../../services/adminService';
+import { CollectionOccasion } from '../../types/data';
 
 interface AddProductModalProps {
   isOpen: boolean;
@@ -35,15 +36,18 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
     image: ''
   });
   const [categories, setCategories] = useState<any[]>([]);
+  const [occasions, setOccasions] = useState<CollectionOccasion[]>([]);
+  const [selectedOccasions, setSelectedOccasions] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [imagePreviews, setImagePreviews] = useState<Array<{ file: File; preview: string }>>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Load categories when modal opens - always reload to ensure fresh data
+  // Load categories and occasions when modal opens - always reload to ensure fresh data
   useEffect(() => {
     if (isOpen) {
       // Always reload categories when modal opens to ensure they're available
       loadCategories();
+      loadOccasions();
     }
   }, [isOpen]);
 
@@ -58,6 +62,21 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
       }
     } catch (err) {
       console.error('Error loading categories:', err);
+    }
+  };
+
+  const loadOccasions = async () => {
+    try {
+      const result = await adminService.getOccasions();
+      if (result.success) {
+        setOccasions(result.data);
+      } else {
+        console.error('Error loading occasions:', result.error);
+        setOccasions([]);
+      }
+    } catch (err) {
+      console.error('Error loading occasions:', err);
+      setOccasions([]);
     }
   };
 
@@ -182,6 +201,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
     if (formData.width && parseFloat(formData.width) < 0) newErrors.width = 'Width cannot be negative';
     if (formData.height && parseFloat(formData.height) < 0) newErrors.height = 'Height cannot be negative';
     if (imagePreviews.length === 0) newErrors.image = 'At least one product image is required';
+    if (selectedOccasions.length === 0) newErrors.occasions = 'At least one collection/occasion is required';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -230,6 +250,8 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
       if (formData.tags.trim()) {
         productData.tags = formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
       }
+      // Occasions are required, so always include them
+      productData.occasions = selectedOccasions;
       if (formData.weight) {
         productData.weight = parseFloat(formData.weight);
       }
@@ -317,8 +339,19 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
       isDigital: false,
       image: ''
     });
+    setSelectedOccasions([]);
     setImagePreviews([]);
     setErrors({});
+  };
+
+  const handleOccasionChange = (occasionValue: string) => {
+    setSelectedOccasions(prev => {
+      if (prev.includes(occasionValue)) {
+        return prev.filter(occ => occ !== occasionValue);
+      } else {
+        return [...prev, occasionValue];
+      }
+    });
   };
 
   const handleClose = () => {
@@ -491,6 +524,41 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
             </select>
             {errors.category && <p className="mt-1 text-sm text-red-600">{errors.category}</p>}
           </div>
+        </div>
+
+        {/* Occasions Multi-Select - Tag Style */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Collections / Occasions <span className="text-red-500">*</span>
+          </label>
+          {occasions.length === 0 ? (
+            <p className="text-sm text-gray-500">Loading occasions...</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {occasions.map((occasion) => {
+                const isSelected = selectedOccasions.includes(occasion.value);
+                return (
+                  <button
+                    key={occasion.value}
+                    type="button"
+                    onClick={() => handleOccasionChange(occasion.value)}
+                    className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
+                      isSelected
+                        ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300'
+                    } ${errors.occasions ? 'border-red-500' : ''}`}
+                  >
+                    <span>{occasion.name}</span>
+                    {isSelected && (
+                      <Close className="ml-2 w-4 h-4 hover:scale-110 transition-transform" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          {errors.occasions && <p className="mt-1 text-sm text-red-600">{errors.occasions}</p>}
+          <p className="mt-2 text-xs text-gray-500">Click on tags to select/deselect occasions</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

@@ -104,6 +104,57 @@ function CollectionsContent() {
   // Search state
   const [searchTerm, setSearchTerm] = useState('');
   
+  // Occasion selection state (for the new UI)
+  const [selectedOccasion, setSelectedOccasion] = useState<string | null>(null);
+  const [occasionCounts, setOccasionCounts] = useState<Record<string, number>>({});
+  
+  // Load occasion product counts
+  const loadOccasionCounts = useCallback(async () => {
+    if (occasions.length === 0) return;
+    
+    try {
+      const counts: Record<string, number> = {};
+      const occasionsList = occasions.filter(occ => occ.value !== 'all');
+      
+      // First try to get counts from API
+      await Promise.all(
+        occasionsList.map(async (occasion) => {
+          try {
+            const result = await loadProductsWithFilters({
+              occasion: occasion.value,
+              limit: 1,
+              page: 1
+            });
+            counts[occasion.value] = result.pagination.totalProducts;
+          } catch (error) {
+            console.error(`Error loading count for ${occasion.value}:`, error);
+            counts[occasion.value] = 0;
+          }
+        })
+      );
+      
+      // If all counts are 0, try to get counts from JSON fallback
+      const allZero = Object.values(counts).every(count => count === 0);
+      if (allZero) {
+        try {
+          const jsonProducts = await loadCollectionsProductsData();
+          occasionsList.forEach((occasion) => {
+            const matchingProducts = jsonProducts.filter((product: Product) => 
+              product.occasions && product.occasions.includes(occasion.value)
+            );
+            counts[occasion.value] = matchingProducts.length;
+          });
+        } catch (error) {
+          console.error('Error loading counts from JSON:', error);
+        }
+      }
+      
+      setOccasionCounts(counts);
+    } catch (error) {
+      console.error('Error loading occasion counts:', error);
+    }
+  }, [occasions]);
+
   // Load data on component mount
   useEffect(() => {
     const loadData = async () => {
@@ -129,6 +180,13 @@ function CollectionsContent() {
     loadData();
   }, []);
 
+  // Load occasion counts when occasions are loaded
+  useEffect(() => {
+    if (occasions.length > 0) {
+      loadOccasionCounts();
+    }
+  }, [occasions.length, loadOccasionCounts]);
+
   // Load filtered products
   const loadFilteredProducts = useCallback(async () => {
     try {
@@ -138,6 +196,7 @@ function CollectionsContent() {
         page: currentPage,
         limit: itemsPerPage,
         category: selectedCategories.includes('all') ? undefined : selectedCategories[0],
+        occasion: selectedOccasion || undefined,
         minPrice: priceRange[0],
         maxPrice: priceRange[1],
         sortBy: sortBy === 'newest' ? 'createdAt' : sortBy === 'price_asc' ? 'price' : 'price',
@@ -152,24 +211,97 @@ function CollectionsContent() {
         result = await loadProductsWithFilters(filters);
       }
 
-      setProducts(result.data);
-      setPagination(result.pagination);
+      // If API returns 0 products, try JSON fallback
+      if (result.pagination.totalProducts === 0 && !searchTerm) {
+        const jsonProducts = await loadCollectionsProductsData();
+        let filteredProducts = jsonProducts;
+        
+        // Filter by occasion if selected
+        if (selectedOccasion) {
+          filteredProducts = jsonProducts.filter((product: Product) => 
+            product.occasions && product.occasions.includes(selectedOccasion)
+          );
+        }
+        
+        // Filter by category if selected
+        if (!selectedCategories.includes('all') && selectedCategories[0]) {
+          const categorySlug = selectedCategories[0];
+          filteredProducts = filteredProducts.filter((product: Product) => {
+            const productCategory = typeof product.category === 'string' 
+              ? product.category 
+              : (product.category as any)?.slug || (product.category as any)?.name;
+            return productCategory === categorySlug || 
+                   productCategory?.toLowerCase() === categorySlug.toLowerCase();
+          });
+        }
+        
+        // Apply price filter
+        filteredProducts = filteredProducts.filter((product: Product) => {
+          const price = product.price || 0;
+          return price >= priceRange[0] && price <= priceRange[1];
+        });
+        
+        // Apply sorting
+        if (sortBy === 'price_asc') {
+          filteredProducts.sort((a: Product, b: Product) => (a.price || 0) - (b.price || 0));
+        } else if (sortBy === 'price_desc') {
+          filteredProducts.sort((a: Product, b: Product) => (b.price || 0) - (a.price || 0));
+        }
+        
+        // Apply pagination
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
+        
+        setProducts(paginatedProducts);
+        setPagination({
+          currentPage,
+          totalPages: Math.ceil(filteredProducts.length / itemsPerPage),
+          totalProducts: filteredProducts.length,
+          hasNextPage: endIndex < filteredProducts.length,
+          hasPrevPage: currentPage > 1
+        });
+      } else {
+        setProducts(result.data);
+        setPagination(result.pagination);
+      }
     } catch (error) {
       console.error('Error loading filtered products:', error);
       // Fallback to JSON data
-      const productsData = await loadCollectionsProductsData();
-      setProducts(productsData);
-      setPagination({
-        currentPage: 1,
-        totalPages: 1,
-        totalProducts: productsData.length,
-        hasNextPage: false,
-        hasPrevPage: false
-      });
+      try {
+        const productsData = await loadCollectionsProductsData();
+        let filteredProducts = productsData;
+        
+        // Filter by occasion if selected
+        if (selectedOccasion) {
+          filteredProducts = productsData.filter((product: Product) => 
+            product.occasions && product.occasions.includes(selectedOccasion)
+          );
+        }
+        
+        setProducts(filteredProducts);
+        setPagination({
+          currentPage: 1,
+          totalPages: 1,
+          totalProducts: filteredProducts.length,
+          hasNextPage: false,
+          hasPrevPage: false
+        });
+      } catch (fallbackError) {
+        console.error('Error loading fallback products:', fallbackError);
+        setProducts([]);
+        setPagination({
+          currentPage: 1,
+          totalPages: 1,
+          totalProducts: 0,
+          hasNextPage: false,
+          hasPrevPage: false
+        });
+      }
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, itemsPerPage, selectedCategories, priceRange, sortBy, searchTerm]);
+  }, [currentPage, itemsPerPage, selectedCategories, selectedOccasion, priceRange, sortBy, searchTerm]);
 
   // Apply all pending filters
   const applyFilters = () => {
@@ -177,6 +309,16 @@ function CollectionsContent() {
     setSelectedOccasions(pendingOccasions);
     setPriceRange(pendingPriceRange);
     setCurrentPage(1); // Reset to first page when applying filters
+    
+    // Sync selectedOccasion with selectedOccasions
+    if (pendingOccasions.includes('all') || pendingOccasions.length === 0) {
+      setSelectedOccasion(null);
+    } else {
+      // Set selectedOccasion to the first selected occasion (or keep current if it's still selected)
+      if (!pendingOccasions.includes(selectedOccasion || '')) {
+        setSelectedOccasion(pendingOccasions[0]);
+      }
+    }
   };
 
   // Clear all filters
@@ -189,6 +331,25 @@ function CollectionsContent() {
     setPriceRange([0, 100000]);
     setSortBy('newest');
     setCurrentPage(1);
+    setSelectedOccasion(null);
+  };
+  
+  // Handle occasion card click
+  const handleOccasionCardClick = (occasionValue: string) => {
+    if (occasionValue === 'all') {
+      setSelectedOccasion(null);
+      setSelectedOccasions(['all']);
+      setPendingOccasions(['all']);
+    } else {
+      setSelectedOccasion(occasionValue);
+      // Update both selectedOccasions and pendingOccasions to sync with filter sidebar
+      // This automatically applies the filter (no need to click "Apply Filters")
+      setSelectedOccasions([occasionValue]);
+      setPendingOccasions([occasionValue]);
+    }
+    setCurrentPage(1);
+    // Open the occasion dropdown in the filter sidebar to show the selection
+    setIsOccasionDropdownOpen(true);
   };
 
   // Handle search and category from URL params
@@ -216,12 +377,22 @@ function CollectionsContent() {
     }
   }, [searchParams, clearSearch, isSearchActive]);
   
-  // Load products when any filter changes
+  // Load products when any filter changes (only if occasion is selected or search is active)
   useEffect(() => {
-    if (categories.length > 0) {
+    if (categories.length > 0 && (selectedOccasion || searchTerm)) {
       loadFilteredProducts();
+    } else if (categories.length > 0 && !selectedOccasion && !searchTerm) {
+      // Clear products when no occasion is selected and no search
+      setProducts([]);
+      setPagination({
+        currentPage: 1,
+        totalPages: 1,
+        totalProducts: 0,
+        hasNextPage: false,
+        hasPrevPage: false
+      });
     }
-  }, [loadFilteredProducts, categories.length]);
+  }, [loadFilteredProducts, categories.length, selectedOccasion, searchTerm]);
   
   // Handle window width check for hydration safety
   useEffect(() => {
@@ -257,15 +428,38 @@ function CollectionsContent() {
   const handleOccasionChange = (occasionValue: string) => {
     if (occasionValue === 'all') {
       setPendingOccasions(['all']);
+      setSelectedOccasion(null);
+      // Auto-apply when selecting 'all'
+      setSelectedOccasions(['all']);
+      setCurrentPage(1);
     } else {
       setPendingOccasions(prev => {
         const newSelection = prev.filter(occ => occ !== 'all');
-        if (newSelection.includes(occasionValue)) {
-          return newSelection.filter(occ => occ !== occasionValue);
+        const isCurrentlySelected = newSelection.includes(occasionValue);
+        
+        if (isCurrentlySelected) {
+          // If deselecting this occasion
+          const updated = newSelection.filter(occ => occ !== occasionValue);
+          if (updated.length === 0) {
+            // If no occasions selected, go back to occasion selection page
+            setSelectedOccasion(null);
+            setSelectedOccasions(['all']);
+          } else {
+            // If deselecting but other occasions remain, keep products view visible
+            // Always set selectedOccasion to the first remaining occasion to maintain products view
+            setSelectedOccasion(updated[0]);
+            setSelectedOccasions(updated);
+          }
+          return updated;
         } else {
-          return [...newSelection, occasionValue];
+          // If selecting this occasion, switch to it and keep products view visible
+          const updated = [...newSelection, occasionValue];
+          setSelectedOccasion(occasionValue);
+          setSelectedOccasions(updated);
+          return updated;
         }
       });
+      setCurrentPage(1);
     }
   };
   
@@ -352,8 +546,112 @@ function CollectionsContent() {
         </motion.div>
       </section>
 
+      {/* Occasion Selection View - Show when no occasion selected and no search */}
+      {!selectedOccasion && !searchTerm && (
+        <section className="py-12 md:py-16">
+          <div className="container mx-auto px-4">
+            {/* Featured Occasions Hero Section */}
+            <div className="mb-12">
+              {/* Featured Occasions Grid (3-4 main occasions) */}
+              <div className="flex justify-center mb-12">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8 max-w-7xl w-full">
+                {occasions
+                  .filter(occ => occ.value !== 'all')
+                  .slice(0, 4)
+                  .map((occasion, index) => (
+                    <motion.div
+                      key={occasion.value}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5, delay: index * 0.1 }}
+                      onClick={() => handleOccasionCardClick(occasion.value)}
+                      className="relative group cursor-pointer overflow-hidden rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2"
+                    >
+                      {/* Card with gradient background */}
+                      <div className="aspect-[4/5] bg-gradient-to-br from-purple-100 via-pink-50 to-yellow-50 flex flex-col items-center justify-center relative overflow-hidden">
+                        {/* Large initial letter - positioned at top */}
+                        <div className="absolute top-6 md:top-8 left-1/2 transform -translate-x-1/2 z-0">
+                          <span className="text-6xl sm:text-7xl md:text-8xl font-script text-primary opacity-25 group-hover:opacity-35 transition-opacity">
+                            {occasion.name.charAt(0)}
+                          </span>
+                        </div>
+                        
+                        {/* Content overlay - centered */}
+                        <div className="relative z-10 text-center p-4 md:p-6 flex flex-col items-center justify-center h-full">
+                          <h3 className="text-xl sm:text-2xl md:text-3xl font-script text-primary mb-2 md:mb-3 group-hover:text-accent transition-colors">
+                            {occasion.name}
+                          </h3>
+                          <p className="text-xs sm:text-sm md:text-base text-gray-600 font-medium">
+                            {occasionCounts[occasion.value] !== undefined 
+                              ? `(${occasionCounts[occasion.value]} items)`
+                              : 'Loading...'}
+                          </p>
+                        </div>
+                        
+                        {/* Hover overlay */}
+                        <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/5 transition-all duration-300" />
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+
+              {/* "Explore More Occasions" Section */}
+              <div className="mb-8">
+                <h3 className="text-xl md:text-2xl font-script text-primary text-center mb-6">
+                  Explore More Occasions
+                </h3>
+                
+                {/* Horizontal Scrollable Strip */}
+                <div className="relative flex justify-center">
+                  <div className="flex gap-3 md:gap-4 overflow-x-auto pb-4 scrollbar-hide scroll-smooth max-w-full">
+                    {occasions
+                      .filter(occ => occ.value !== 'all')
+                      .slice(4)
+                      .map((occasion) => (
+                        <motion.button
+                          key={occasion.value}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => handleOccasionCardClick(occasion.value)}
+                          className="flex-shrink-0 px-5 md:px-6 py-2.5 md:py-3 bg-white border-2 border-primary rounded-full text-primary font-medium hover:bg-primary hover:text-white transition-all duration-200 shadow-md hover:shadow-lg whitespace-nowrap"
+                        >
+                          {occasion.name}
+                        </motion.button>
+                      ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Products View - Show when occasion is selected or search is active */}
+      {(selectedOccasion || searchTerm) && (
+        <section className="py-8 md:py-12">
+          {/* Back to Occasions Button */}
+          {selectedOccasion && !searchTerm && (
+            <div className="container mx-auto px-4 mb-6">
+              <button
+                onClick={() => handleOccasionCardClick('all')}
+                className="flex items-center gap-2 text-primary hover:text-accent transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Back to Occasions
+              </button>
+              <h2 className="text-2xl md:text-3xl font-script text-primary mt-4">
+                {occasions.find(occ => occ.value === selectedOccasion)?.name || 'Products'}
+              </h2>
+            </div>
+          )}
+        </section>
+      )}
+
       {/* Filters and Products */}
-      <section className="py-8 md:py-12">
+      <section className={`py-8 md:py-12 ${selectedOccasion || searchTerm ? '' : 'hidden'}`}>
         <div className="container mx-auto px-4">
           <div className="flex flex-col lg:flex-row gap-6">
       {/* Mobile Filter Toggle */}
@@ -479,20 +777,42 @@ function CollectionsContent() {
                         className="mt-2 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden"
                       >
                         <div className="p-2">
-                          {occasions.map((occasion) => (
-                            <label
-                              key={occasion.value}
-                              className="flex items-center py-2 px-3 hover:bg-gray-50 cursor-pointer transition-colors duration-200"
-                            >
-                              <input
-                                type="checkbox"
-                                checked={pendingOccasions.includes(occasion.value)}
-                                onChange={() => handleOccasionChange(occasion.value)}
-                                className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-2"
-                              />
-                              <span className="ml-3 text-sm text-gray-700">{occasion.name}</span>
-                            </label>
-                          ))}
+                          {occasions.map((occasion) => {
+                            // Determine if this occasion should be checked
+                            // Priority: pendingOccasions > selectedOccasions > selectedOccasion
+                            let isChecked = false;
+                            if (pendingOccasions.length > 0 && !pendingOccasions.includes('all')) {
+                              // If there are pending selections (not 'all'), use pendingOccasions
+                              isChecked = pendingOccasions.includes(occasion.value);
+                            } else if (selectedOccasions.length > 0 && !selectedOccasions.includes('all')) {
+                              // If no pending changes, use selectedOccasions
+                              isChecked = selectedOccasions.includes(occasion.value);
+                            } else if (selectedOccasion) {
+                              // If an occasion card is selected, check that one
+                              isChecked = selectedOccasion === occasion.value;
+                            } else {
+                              // Default: check 'all' if nothing is selected
+                              isChecked = occasion.value === 'all';
+                            }
+                            
+                            return (
+                              <label
+                                key={occasion.value}
+                                className="flex items-center py-2 px-3 hover:bg-gray-50 cursor-pointer transition-colors duration-200"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={(e) => {
+                                    e.stopPropagation();
+                                    handleOccasionChange(occasion.value);
+                                  }}
+                                  className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-2"
+                                />
+                                <span className="ml-3 text-sm text-gray-700">{occasion.name}</span>
+                              </label>
+                            );
+                          })}
                         </div>
                       </motion.div>
                     )}

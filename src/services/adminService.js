@@ -511,6 +511,36 @@ class AdminService {
   }
 
   // Get single category
+  // Get all occasions/collections
+  async getOccasions() {
+    try {
+      const response = await fetch(`${this.baseURL}/products/occasions`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch occasions');
+      }
+
+      return {
+        success: true,
+        data: data.data || []
+      };
+    } catch (error) {
+      console.error('Get occasions error:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to fetch occasions',
+        data: []
+      };
+    }
+  }
+
   async getCategoryById(id) {
     try {
       const response = await fetch(`${this.baseURL}/categories/${id}`, {

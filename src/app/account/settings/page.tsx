@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import authService from '@/services/authService';
 import MainLayout from '@/components/layout/MainLayout';
 import Button from '@/components/ui/Button';
+import { FiUser, FiMapPin, FiBell, FiLock, FiShield, FiSettings } from 'react-icons/fi';
 import '@/styles/components/account/Settings.css';
 
 // Type definitions
@@ -448,12 +449,12 @@ function SettingsPageContent() {
   };
 
   const tabs = [
-    { id: 'profile', label: 'Profile', icon: '👤' },
-    { id: 'addresses', label: 'Addresses', icon: '📍' },
-    { id: 'notifications', label: 'Notifications', icon: '🔔' },
-    { id: 'privacy', label: 'Privacy', icon: '🔒' },
-    { id: 'security', label: 'Security', icon: '🛡️' },
-    { id: 'preferences', label: 'Preferences', icon: '⚙️' }
+    { id: 'profile', label: 'Profile', icon: FiUser },
+    { id: 'addresses', label: 'Addresses', icon: FiMapPin },
+    { id: 'notifications', label: 'Notifications', icon: FiBell },
+    { id: 'privacy', label: 'Privacy', icon: FiLock },
+    { id: 'security', label: 'Security', icon: FiShield },
+    { id: 'preferences', label: 'Preferences', icon: FiSettings }
   ];
 
   // Show loading state while checking authentication
@@ -514,16 +515,21 @@ function SettingsPageContent() {
               {/* Settings Sidebar */}
               <div className="settings-sidebar">
                 <nav className="settings-nav">
-                  {tabs.map((tab) => (
-                    <button
-                      key={tab.id}
-                      className={`settings-nav-item ${activeTab === tab.id ? 'active' : ''}`}
-                      onClick={() => setActiveTab(tab.id)}
-                    >
-                      <span className="nav-icon">{tab.icon}</span>
-                      <span className="nav-label">{tab.label}</span>
-                    </button>
-                  ))}
+                  {tabs.map((tab) => {
+                    const IconComponent = tab.icon;
+                    return (
+                      <button
+                        key={tab.id}
+                        className={`settings-nav-item ${activeTab === tab.id ? 'active' : ''}`}
+                        onClick={() => setActiveTab(tab.id)}
+                      >
+                        <span className="nav-icon">
+                          <IconComponent />
+                        </span>
+                        <span className="nav-label">{tab.label}</span>
+                      </button>
+                    );
+                  })}
                 </nav>
               </div>
 
@@ -1254,6 +1260,25 @@ function SettingsPageContent() {
                           </select>
                         </div>
                       </div>
+
+                      {/* Danger Zone */}
+                      <div className="danger-zone">
+                        <h3 className="danger-title">Danger Zone</h3>
+                        <div className="danger-item">
+                          <div className="danger-info">
+                            <h4 className="danger-name">Delete Account</h4>
+                            <p className="danger-description">
+                              Permanently delete your account and all associated data. This action cannot be undone.
+                            </p>
+                          </div>
+                          <Button 
+                            onClick={handleDeleteAccount}
+                            className="danger-btn"
+                          >
+                            Delete Account
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -1332,25 +1357,6 @@ function SettingsPageContent() {
                     </div>
                   </div>
                 )}
-
-                {/* Danger Zone */}
-                <div className="danger-zone">
-                  <h3 className="danger-title">Danger Zone</h3>
-                  <div className="danger-item">
-                    <div className="danger-info">
-                      <h4 className="danger-name">Delete Account</h4>
-                      <p className="danger-description">
-                        Permanently delete your account and all associated data. This action cannot be undone.
-                      </p>
-                    </div>
-                    <Button 
-                      onClick={handleDeleteAccount}
-                      className="danger-btn"
-                    >
-                      Delete Account
-                    </Button>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
