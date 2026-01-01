@@ -62,9 +62,11 @@ function SettingsPageContent() {
     }
   }, [searchParams]);
 
-  // Fetch user data from backend
+  // Fetch user data from backend when profile tab is active
   useEffect(() => {
     const fetchUserData = async () => {
+      // Only fetch when profile tab is active
+      if (activeTab !== 'profile') return;
       if (!isAuthenticated || !user) return;
       
       try {
@@ -82,7 +84,7 @@ function SettingsPageContent() {
     };
 
     fetchUserData();
-  }, [isAuthenticated, user]);
+  }, [activeTab, isAuthenticated, user]);
 
   const [settings, setSettings] = useState({
     // Profile Settings
@@ -464,13 +466,13 @@ function SettingsPageContent() {
         <div className="min-h-screen bg-gradient-to-br from-soft-pink-100 to-soft-pink-200 py-8">
           <div className="container mx-auto px-4">
             <div className="max-w-6xl mx-auto">
-              <div className="text-center">
-                <h1 className="text-4xl md:text-5xl font-script text-primary mb-4">Access Denied</h1>
-                <p className="text-dark-gray text-lg mb-8">
+              <div className="text-center px-4">
+                <h1 className="text-3xl sm:text-4xl md:text-5xl font-script text-primary mb-3 sm:mb-4">Access Denied</h1>
+                <p className="text-dark-gray text-base sm:text-lg mb-6 sm:mb-8">
                   Please log in to access your account settings.
                 </p>
-                <Button href="/auth/login">
-                  Sign In
+                <Button href="/" className="w-full sm:w-auto">
+                  Go to Home
                 </Button>
               </div>
             </div>
@@ -480,16 +482,16 @@ function SettingsPageContent() {
     );
   }
 
-  // Show loading state while fetching user data
-  if (isLoading) {
+  // Show loading state while fetching user data (only for profile tab)
+  if (isLoading && activeTab === 'profile') {
     return (
       <MainLayout>
         <div className="min-h-screen bg-gradient-to-br from-soft-pink-100 to-soft-pink-200 py-8">
           <div className="container mx-auto px-4">
             <div className="max-w-6xl mx-auto">
-              <div className="text-center">
-                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                <p className="text-dark-gray text-lg">Loading your settings...</p>
+              <div className="text-center px-4">
+                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3 sm:mb-4"></div>
+                <p className="text-dark-gray text-base sm:text-lg">Loading your profile...</p>
               </div>
             </div>
           </div>
@@ -500,13 +502,13 @@ function SettingsPageContent() {
 
   return (
     <MainLayout>
-      <div className="min-h-screen bg-gradient-to-br from-soft-pink-100 to-soft-pink-200 py-8">
-        <div className="container mx-auto px-4">
+      <div className="min-h-screen bg-gradient-to-br from-soft-pink-100 to-soft-pink-200 py-4 sm:py-6 md:py-8">
+        <div className="container mx-auto px-3 sm:px-4 md:px-6">
           <div className="max-w-6xl mx-auto">
             {/* Header */}
-            <div className="text-center mb-8">
-              <h1 className="text-4xl md:text-5xl font-script text-primary mb-4">Account Settings</h1>
-              <p className="text-dark-gray text-lg">
+            <div className="text-center mb-6 sm:mb-8">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-script text-primary mb-2 sm:mb-4">Account Settings</h1>
+              <p className="text-dark-gray text-base sm:text-lg px-4">
                 Manage your account preferences and security settings
               </p>
             </div>
@@ -545,6 +547,12 @@ function SettingsPageContent() {
                       </p>
                     </div>
 
+                    {isLoading ? (
+                      <div className="text-center py-12">
+                        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                        <p className="text-dark-gray">Loading profile data...</p>
+                      </div>
+                    ) : (
                     <div className="settings-form">
                       <div className="form-grid">
                         <div className="form-group">
@@ -657,6 +665,7 @@ function SettingsPageContent() {
                         )}
                       </div>
                     </div>
+                    )}
                   </div>
                 )}
 

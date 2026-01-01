@@ -9,10 +9,10 @@ export function middleware(request: NextRequest) {
   
   // Define public routes that don't require authentication
   const publicRoutes = [
-    '/auth/login',
-    '/auth/register',
+    '/',
     '/auth/forgot-password',
     '/auth/reset-password',
+    '/auth/callback',
     '/api/auth',
     '/_next',
     '/favicon.ico',
@@ -33,12 +33,9 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
   
-  // If no token and trying to access protected route, redirect to login
+  // If no token and trying to access protected route, redirect to home page
   if (!token) {
-    const loginUrl = new URL('/auth/login', request.url);
-    // Add the current path as a redirect parameter
-    loginUrl.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(loginUrl);
+    return NextResponse.redirect(new URL('/', request.url));
   }
   
   // If token exists, allow access

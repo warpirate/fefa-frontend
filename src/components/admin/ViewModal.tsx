@@ -44,7 +44,7 @@ interface ViewModalProps {
   onClose: () => void;
   data: UserData | null;
   onEdit?: () => void;
-  type: 'user' | 'product' | 'category' | 'order' | 'banner';
+  type: 'user' | 'product' | 'category' | 'collection' | 'order' | 'banner';
 }
 
 export default function ViewModal({ isOpen, onClose, data, onEdit, type }: ViewModalProps) {
@@ -545,6 +545,61 @@ export default function ViewModal({ isOpen, onClose, data, onEdit, type }: ViewM
     </div>
   );
 
+  const renderCollectionDetails = () => (
+    <div className="space-y-6">
+      {/* Collection Header */}
+      <div className="flex items-start space-x-4">
+        <div className="flex-shrink-0">
+          <img
+            className="h-24 w-24 rounded-lg object-cover"
+            src={(data as any).image || '/placeholder-collection.png'}
+            alt={(data as any).name}
+          />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h2 className="text-xl font-semibold text-gray-900">
+            {(data as any).name}
+          </h2>
+          <p className="text-sm text-gray-500">/{(data as any).slug}</p>
+          <div className="mt-2 flex items-center space-x-2">
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+              (data as any).isActive 
+                ? 'bg-green-100 text-green-800' 
+                : 'bg-red-100 text-red-800'
+            }`}>
+              {(data as any).isActive ? 'Active' : 'Inactive'}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Collection Information */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Basic Information</h3>
+          <div className="space-y-3">
+            <div>
+              <p className="text-sm font-medium text-gray-900">Products</p>
+              <p className="text-sm text-gray-500">{(data as any).productCount || 0} products</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-900">Sort Order</p>
+              <p className="text-sm text-gray-500">{(data as any).sortOrder || 0}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-900">Created</p>
+              <p className="text-sm text-gray-500">{(data as any).createdAt ? new Date((data as any).createdAt).toLocaleDateString() : 'N/A'}</p>
+            </div>
+          </div>
+        </div>
+        <div>
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Description</h3>
+          <p className="text-sm text-gray-500">{(data as any).description || 'No description available'}</p>
+        </div>
+      </div>
+    </div>
+  );
+
   const renderBannerDetails = () => {
     const banner = data as any;
     const ctr = banner.impressions > 0 ? ((banner.clicks / banner.impressions) * 100).toFixed(2) : '0';
@@ -726,6 +781,8 @@ export default function ViewModal({ isOpen, onClose, data, onEdit, type }: ViewM
         return renderProductDetails();
       case 'category':
         return renderCategoryDetails();
+      case 'collection':
+        return renderCollectionDetails();
       case 'banner':
         return renderBannerDetails();
       default:

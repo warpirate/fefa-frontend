@@ -2,12 +2,14 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { FiUser, FiSettings, FiLogOut, FiHeart, FiShoppingBag, FiChevronDown } from 'react-icons/fi';
 import { useAuth } from '@/contexts/AuthContext';
 import '@/styles/components/auth/UserDropdown.css';
 
 export default function UserDropdown() {
+  const router = useRouter();
   const { user, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -25,9 +27,11 @@ export default function UserDropdown() {
     };
   }, []);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
     setIsOpen(false);
+    await logout();
+    // Redirect to home after logout
+    router.push('/');
   };
 
   if (!user) return null;

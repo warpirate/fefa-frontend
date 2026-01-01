@@ -133,7 +133,11 @@ const API_HELPERS = {
   
   getActiveBanners: async () => {
     try {
-      const response = await fetch(API_HELPERS.getUrl(API_CONFIG.ENDPOINTS.BANNERS_ACTIVE));
+      // Use /banners endpoint instead of /banners/active to get all active banners
+      // regardless of date restrictions (startDate/endDate)
+      // Add cache-busting parameter to ensure fresh data
+      const cacheBuster = `?t=${Date.now()}`;
+      const response = await fetch(API_HELPERS.getUrl(API_CONFIG.ENDPOINTS.BANNERS + cacheBuster));
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }

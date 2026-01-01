@@ -568,3 +568,33 @@
   }
 }
 
+/* Custom scrollbar for modal */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+  transition: background 0.3s ease;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Enhanced input focus animations */
+@keyframes inputPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(75, 0, 110, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(75, 0, 110, 0.1);
+  }
+}
+
