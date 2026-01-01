@@ -23,6 +23,7 @@ interface AuthContextType {
   handleEmailOTPCallback?: (email: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   loginWithPassword: (email: string, password: string) => Promise<void>;
+  register: (userData: { firstName: string; lastName: string; email: string; phone: string; password: string }) => Promise<void>;
   logout: () => Promise<void>;
   isLoading: boolean; // For initial auth check only
   isOTPLoading: boolean; // Separate loading state for OTP operations
@@ -402,6 +403,61 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Register a new user
+  const register = async (userData: { firstName: string; lastName: string; email: string; phone: string; password: string }): Promise<void> => {
+    try {
+      setIsOTPLoading(true);
+      setError(null);
+
+      console.log('Registering new user');
+
+      // Call backend API to register
+      const response = await authService.register(userData);
+      const userDataResponse = response.user;
+
+      // Store tokens
+      authService.storeTokens(response.tokens.accessToken, response.tokens.refreshToken);
+
+      // Also store in cookies for middleware access
+      const isProduction = process.env.NODE_ENV === 'production';
+      const cookieOptions = isProduction ? 'secure; samesite=strict' : 'samesite=lax';
+      document.cookie = `fefa_access_token=${response.tokens.accessToken}; path=/; max-age=${7 * 24 * 60 * 60}; ${cookieOptions}`;
+      document.cookie = `fefa_refresh_token=${response.tokens.refreshToken}; path=/; max-age=${30 * 24 * 60 * 60}; ${cookieOptions}`;
+
+      // Convert backend user data to frontend format
+      const user: User = {
+        id: userDataResponse.id,
+        firstName: userDataResponse.firstName || '',
+        lastName: userDataResponse.lastName || '',
+        email: userDataResponse.email || '',
+        phone: userDataResponse.phone,
+        avatar: userDataResponse.profileImage,
+        role: userDataResponse.role || 'user',
+        isEmailVerified: true,
+      };
+
+      setUser(user);
+      localStorage.setItem('fefa_user', JSON.stringify(user));
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      
+      let errorMessage = 'Registration failed';
+      
+      if (error.message?.includes('already exists') || error.message?.includes('already registered')) {
+        errorMessage = 'An account with this email already exists. Please login instead.';
+      } else if (error.message?.includes('Invalid')) {
+        errorMessage = 'Invalid registration data. Please check your information.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setError(errorMessage);
+      throw error;
+    } finally {
+      setIsOTPLoading(false);
+    }
+  };
+
   const loginWithGoogle = async () => {
     try {
       setIsOTPLoading(true); // Use separate OTP loading state instead of global isLoading
@@ -505,6 +561,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     handleEmailOTPCallback,
     loginWithGoogle,
     loginWithPassword,
+    register,
     logout,
     isLoading, // For initial auth check
     isOTPLoading, // For OTP operations

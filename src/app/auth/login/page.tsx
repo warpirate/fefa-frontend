@@ -11,7 +11,7 @@ import '@/styles/components/auth/Login.css';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { user, login, loginWithGoogle, isLoading, error, clearError, isAdmin, hasRole } = useAuth();
+  const { user, loginWithPassword, loginWithGoogle, isLoading, error, clearError, isAdmin, hasRole } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -81,7 +81,7 @@ export default function LoginPage() {
     if (!validateForm()) return;
     
     try {
-      await login(formData.email, formData.password);
+      await loginWithPassword(formData.email, formData.password);
       // Role-based redirection will be handled by useEffect after user state updates
     } catch (error) {
       // Error is handled by AuthContext and displayed via error state
