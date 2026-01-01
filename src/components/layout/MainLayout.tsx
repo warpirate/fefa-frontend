@@ -3,12 +3,16 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import Header from './Header';
 import Footer from './Footer';
+import LoginModal from '@/components/auth/LoginModal';
+import { useLoginModal } from '@/contexts/LoginModalContext';
 
 interface MainLayoutProps {
   children: React.ReactNode;
 }
 
 export default function MainLayout({ children }: MainLayoutProps) {
+  const { isLoginOpen, closeLoginModal, redirectTo } = useLoginModal();
+
   return (
     <>
       <Header />
@@ -24,6 +28,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
         </motion.main>
       </AnimatePresence>
       <Footer />
+      <LoginModal isOpen={isLoginOpen} onClose={closeLoginModal} redirectTo={redirectTo} />
     </>
   );
 }

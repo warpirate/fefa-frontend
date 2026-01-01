@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FiTrash2, FiShoppingBag, FiArrowRight, FiMinus, FiPlus } from 'react-icons/fi';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
+import { useLoginModal } from '@/contexts/LoginModalContext';
 import MainLayout from '@/components/layout/MainLayout';
 import '@/styles/components/cart/Cart.css';
 
@@ -44,8 +45,10 @@ export default function CartPage() {
   const [couponApplied, setCouponApplied] = useState(false);
   const [discount, setDiscount] = useState(0);
   const { isAuthenticated } = useAuth();
+  const { openLoginModal } = useLoginModal();
   const { 
     cart, 
+    localCart,
     isLoading, 
     error, 
     itemCount, 
@@ -55,7 +58,8 @@ export default function CartPage() {
     currency,
     updateCartItem, 
     removeFromCart, 
-    clearError 
+    clearError,
+    getCartItems
   } = useCart();
 
   // Clear error when component mounts
@@ -65,24 +69,24 @@ export default function CartPage() {
     }
   }, [error, clearError]);
 
-  const handleRemoveFromCart = async (productId: string) => {
+  const handleRemoveFromCart = async (productId: string, variantId?: string) => {
     setRemovingItemId(productId);
     try {
-      await removeFromCart(productId);
+      await removeFromCart(productId, variantId);
     } catch (error) {
-      console.error('Error removing item:', error);
+      // Error removing item
     } finally {
       setRemovingItemId(null);
     }
   };
 
-  const handleUpdateQuantity = async (productId: string, newQuantity: number) => {
+  const handleUpdateQuantity = async (productId: string, newQuantity: number, variantId?: string) => {
     if (newQuantity < 1) return;
     
     try {
-      await updateCartItem(productId, newQuantity);
+      await updateCartItem(productId, newQuantity, variantId);
     } catch (error) {
-      console.error('Error updating quantity:', error);
+      // Error updating quantity
     }
   };
 
@@ -102,8 +106,8 @@ export default function CartPage() {
     }
   };
 
-  // Use cart data from context
-  const cartItems = cart?.items || [];
+  // Use cart data from context - get local cart items if not authenticated
+  const cartItems = isAuthenticated ? (cart?.items || []) : getCartItems();
   const discountAmount = subtotal * discount;
   const finalTotal = subtotal - discountAmount;
   const shipping = finalTotal > 0 ? (finalTotal > 5000 ? 0 : 99) : 0;
@@ -124,33 +128,7 @@ export default function CartPage() {
     show: { opacity: 1, y: 0, transition: { duration: 0.4 } }
   };
 
-  // Show authentication required message
-  if (!isAuthenticated) {
-    return (
-      <MainLayout>
-        <div className="min-h-screen pt-32 pb-16 px-4">
-          <div className="container mx-auto max-w-6xl">
-            <div className="flex flex-col items-center justify-center h-64">
-              <div className="w-20 h-20 bg-soft-pink-100 rounded-full flex items-center justify-center mb-6">
-                <FiShoppingBag className="w-10 h-10 text-accent" />
-              </div>
-              <h2 className="text-2xl font-medium text-primary mb-2">Please log in to view your cart</h2>
-              <p className="text-gray-500 mb-8 max-w-md text-center">
-                You need to be logged in to add items to your cart and view your shopping cart.
-              </p>
-              <Link
-                href="/auth/login"
-                className="bg-primary text-white py-3 px-8 rounded-md hover:bg-accent transition-colors flex items-center gap-2"
-              >
-                <span>Log In</span>
-                <FiArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </MainLayout>
-    );
-  }
+  // No redirect - allow viewing cart without login
 
   if (isLoading) {
     return (
@@ -274,7 +252,7 @@ export default function CartPage() {
                             <div className="md:hidden text-sm text-gray-500 mb-1">Quantity:</div>
                             <div className="flex items-center md:justify-center">
                               <button
-                                onClick={() => handleUpdateQuantity(cartItem.product._id, cartItem.quantity - 1)}
+                                onClick={() => handleUpdateQuantity(cartItem.product._id, cartItem.quantity - 1, cartItem.variant?._id)}
                                 className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100 transition-colors"
                                 disabled={isLoading}
                               >
@@ -282,7 +260,7 @@ export default function CartPage() {
                               </button>
                               <span className="w-10 text-center">{cartItem.quantity}</span>
                               <button
-                                onClick={() => handleUpdateQuantity(cartItem.product._id, cartItem.quantity + 1)}
+                                onClick={() => handleUpdateQuantity(cartItem.product._id, cartItem.quantity + 1, cartItem.variant?._id)}
                                 className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100 transition-colors"
                                 disabled={isLoading}
                               >
@@ -300,7 +278,7 @@ export default function CartPage() {
                           {/* Remove Button - Mobile */}
                           <div className="flex md:hidden mt-2">
                             <button
-                              onClick={() => handleRemoveFromCart(cartItem.product._id)}
+                              onClick={() => handleRemoveFromCart(cartItem.product._id, cartItem.variant?._id)}
                               className="text-sm text-gray-500 hover:text-accent transition-colors flex items-center"
                               disabled={removingItemId === cartItem.product._id || isLoading}
                             >
@@ -316,7 +294,7 @@ export default function CartPage() {
                           {/* Remove Button - Desktop */}
                           <div className="hidden md:block absolute right-0 top-0 mt-4 mr-4">
                             <button
-                              onClick={() => handleRemoveFromCart(cartItem.product._id)}
+                              onClick={() => handleRemoveFromCart(cartItem.product._id, cartItem.variant?._id)}
                               className="text-gray-400 hover:text-accent transition-colors"
                               disabled={removingItemId === cartItem.product._id || isLoading}
                             >
@@ -419,7 +397,14 @@ export default function CartPage() {
                   
                   {/* Checkout Button */}
                   <button
-                    onClick={() => router.push('/checkout')}
+                    onClick={() => {
+                      if (!isAuthenticated) {
+                        // Open login modal with redirect to checkout
+                        openLoginModal('/checkout');
+                      } else {
+                        router.push('/checkout');
+                      }
+                    }}
                     className="w-full bg-accent text-white py-3 rounded-md hover:bg-accent/90 transition-colors flex items-center justify-center gap-2"
                   >
                     <span>Proceed to Checkout</span>

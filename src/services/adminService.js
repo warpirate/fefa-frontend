@@ -691,6 +691,221 @@ class AdminService {
     }
   }
 
+  // ==================== COLLECTIONS ====================
+
+  // Get all collections (admin view)
+  async getAllCollections(params = {}) {
+    try {
+      const queryParams = new URLSearchParams();
+      
+      // Add pagination
+      if (params.page) queryParams.append('page', params.page);
+      if (params.limit) queryParams.append('limit', params.limit);
+      
+      // Add filters
+      if (params.search) queryParams.append('search', params.search);
+      if (params.status) queryParams.append('isActive', params.status === 'active');
+      
+      // Add sorting
+      if (params.sortBy) queryParams.append('sortBy', params.sortBy);
+      if (params.sortOrder) queryParams.append('sortOrder', params.sortOrder);
+      
+      // Remove isActive filter for admin view to show all collections
+      queryParams.append('admin', 'true');
+
+      const response = await fetch(`${this.baseURL}/collections?${queryParams}`, {
+        method: 'GET',
+        headers: this.getAuthHeaders()
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch collections');
+      }
+
+      return {
+        success: true,
+        data: data.data || [],
+        pagination: data.pagination
+      };
+    } catch (error) {
+      console.error('Get all collections error:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to fetch collections'
+      };
+    }
+  }
+
+  // Get single collection
+  async getCollectionById(id) {
+    try {
+      const response = await fetch(`${this.baseURL}/collections/id/${id}`, {
+        method: 'GET',
+        headers: this.getAuthHeaders()
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch collection');
+      }
+
+      return {
+        success: true,
+        data: data.data
+      };
+    } catch (error) {
+      console.error('Get collection by ID error:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to fetch collection'
+      };
+    }
+  }
+
+  // Create collection (supports FormData for image upload)
+  async createCollection(collectionData) {
+    try {
+      // Check if collectionData is FormData (for image upload) or regular object
+      const isFormData = collectionData instanceof FormData;
+      
+      const headers = this.getAuthHeaders();
+      
+      // Remove Content-Type header for FormData (browser will set it with boundary)
+      if (isFormData) {
+        delete headers['Content-Type'];
+      }
+
+      const response = await fetch(`${this.baseURL}/collections`, {
+        method: 'POST',
+        headers: headers,
+        body: isFormData ? collectionData : JSON.stringify(collectionData)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // Handle authentication errors
+        if (response.status === 401 || response.status === 403) {
+          return {
+            success: false,
+            requiresAuth: true,
+            error: data.message || 'Authentication required'
+          };
+        }
+        throw new Error(data.message || 'Failed to create collection');
+      }
+
+      return {
+        success: true,
+        data: data.data
+      };
+    } catch (error) {
+      console.error('Create collection error:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to create collection'
+      };
+    }
+  }
+
+  // Update collection (supports FormData for image upload)
+  async updateCollection(id, collectionData) {
+    try {
+      // Check if collectionData is FormData (for image upload) or regular object
+      const isFormData = collectionData instanceof FormData;
+      
+      const headers = this.getAuthHeaders();
+      
+      // Remove Content-Type header for FormData (browser will set it with boundary)
+      if (isFormData) {
+        delete headers['Content-Type'];
+      }
+
+      const response = await fetch(`${this.baseURL}/collections/${id}`, {
+        method: 'PUT',
+        headers: headers,
+        body: isFormData ? collectionData : JSON.stringify(collectionData)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // Handle authentication errors
+        if (response.status === 401 || response.status === 403) {
+          return {
+            success: false,
+            requiresAuth: true,
+            error: data.message || 'Authentication required'
+          };
+        }
+        console.error('Collection update failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          data: data
+        });
+        throw new Error(data.message || `Failed to update collection (${response.status})`);
+      }
+
+      return {
+        success: true,
+        data: data.data
+      };
+    } catch (error) {
+      console.error('Update collection error:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to update collection'
+      };
+    }
+  }
+
+  // Delete collection
+  async deleteCollection(id) {
+    try {
+      const response = await fetch(`${this.baseURL}/collections/${id}`, {
+        method: 'DELETE',
+        headers: this.getAuthHeaders()
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to delete collection');
+      }
+
+      return {
+        success: true,
+        message: data.message || 'Collection deleted successfully'
+      };
+    } catch (error) {
+      console.error('Delete collection error:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to delete collection'
+      };
+    }
+  }
+
+  // Format collection for display (similar to formatCategoryForDisplay)
+  formatCollectionForDisplay(collection) {
+    return {
+      id: collection._id || collection.id,
+      name: collection.name,
+      slug: collection.slug,
+      description: collection.description || '',
+      image: collection.image || '/placeholder-collection.png',
+      isActive: collection.isActive !== undefined ? collection.isActive : true,
+      sortOrder: collection.sortOrder || 0,
+      productCount: collection.productCount || 0, // This would need to be populated from products
+      createdAt: collection.createdAt,
+      updatedAt: collection.updatedAt,
+      status: collection.isActive ? 'active' : 'inactive'
+    };
+  }
+
   // ==================== USERS ====================
 
   // Get all users (admin view)

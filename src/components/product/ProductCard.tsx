@@ -213,19 +213,11 @@ export default function ProductCard({
   const handleToggleWishlist = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    if (!isAuthenticated) {
-      // Redirect to login page
-      router.push('/auth/login');
-      return;
-    }
 
     try {
       const productId = _id || id;
-      console.log('[ProductCard] Toggling wishlist:', { _id, id, productId });
       
       if (!productId) {
-        console.error('[ProductCard] No product ID available');
         setNotificationMessage('Product ID not found');
         setShowNotification(true);
         setTimeout(() => setShowNotification(false), 2000);
@@ -237,7 +229,25 @@ export default function ProductCard({
         setIsInWishlist(false);
         setNotificationMessage('Removed from wishlist');
       } else {
-        await addToWishlist(productId);
+        // Get primary image URL
+        const primaryImage = images?.find((img): img is ProductImage => 
+          typeof img === 'object' && 'isPrimary' in img && img.isPrimary
+        ) || images?.[0];
+        const imageUrl = (primaryImage && typeof primaryImage === 'object' && 'url' in primaryImage) 
+          ? primaryImage.url 
+          : '';
+
+        // Add to wishlist with product info for local storage
+        await addToWishlist(
+          productId,
+          undefined, // variantId
+          undefined, // notes
+          {
+            name: name,
+            image: imageUrl,
+            slug: slug
+          }
+        );
         setIsInWishlist(true);
         setNotificationMessage('Added to wishlist');
       }
@@ -245,7 +255,6 @@ export default function ProductCard({
       setShowNotification(true);
       setTimeout(() => setShowNotification(false), 2000);
     } catch (error: any) {
-      console.error('Error toggling wishlist:', error);
       const errorMessage = error.message || 'Failed to update wishlist';
       setNotificationMessage(errorMessage);
       setShowNotification(true);
@@ -256,12 +265,6 @@ export default function ProductCard({
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    if (!isAuthenticated) {
-      // Redirect to login page
-      router.push('/auth/login');
-      return;
-    }
 
     try {
       setIsAddingToCart(true);
@@ -273,7 +276,27 @@ export default function ProductCard({
         return;
       }
 
-      await addToCart(productId, 1);
+      // Get primary image URL
+      const primaryImage = images?.find((img): img is ProductImage => 
+        typeof img === 'object' && 'isPrimary' in img && img.isPrimary
+      ) || images?.[0];
+      const imageUrl = (primaryImage && typeof primaryImage === 'object' && 'url' in primaryImage) 
+        ? primaryImage.url 
+        : '';
+
+      // Add to cart with product info for local storage
+      await addToCart(
+        productId, 
+        1,
+        undefined, // variantId
+        {
+          name: name,
+          image: imageUrl,
+          slug: slug,
+          price: price
+        }
+      );
+      
       setIsAddedToCart(true);
       setNotificationMessage('Added to cart');
       setShowNotification(true);
@@ -283,7 +306,6 @@ export default function ProductCard({
         setShowNotification(false);
       }, 2000);
     } catch (error: any) {
-      console.error('Error adding to cart:', error);
       setNotificationMessage(error.message || 'Failed to add to cart');
       setShowNotification(true);
       setTimeout(() => setShowNotification(false), 3000);
@@ -346,7 +368,7 @@ export default function ProductCard({
                     />
                   </svg>
                 </div>
-                <span className="text-primary dark:text-[#E6C547] font-script text-sm">No Image</span>
+                <span className="text-primary dark:text-[#E6C547] font-playfair text-sm">No Image</span>
               </div>
             </div>
           )}
@@ -363,6 +385,13 @@ export default function ProductCard({
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={handleToggleWishlist}
+            animate={isInWishlist ? {
+              scale: [1, 1.2, 1],
+            } : {}}
+            transition={isInWishlist ? {
+              duration: 0.5,
+              times: [0, 0.5, 1],
+            } : {}}
             className={`p-2 sm:p-3 rounded-full shadow-lg transition-all duration-200 ${
               isInWishlist 
                 ? 'bg-accent dark:bg-[#E6C547] text-white shadow-accent/25' 
@@ -371,7 +400,18 @@ export default function ProductCard({
             aria-label={isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
             suppressHydrationWarning
           >
-            <FiHeart className={`w-3 h-3 sm:w-4 sm:h-4 ${isInWishlist ? 'fill-current' : ''}`} />
+            <motion.div
+              animate={isInWishlist ? {
+                scale: [1, 1.3, 1],
+                rotate: [0, 10, -10, 0],
+              } : {}}
+              transition={isInWishlist ? {
+                duration: 0.6,
+                times: [0, 0.3, 0.6, 1],
+              } : {}}
+            >
+              <FiHeart className={`w-3 h-3 sm:w-4 sm:h-4 ${isInWishlist ? 'fill-current' : ''}`} />
+            </motion.div>
           </motion.button>
           <motion.button 
             whileHover={{ scale: 1.1 }}
@@ -388,12 +428,43 @@ export default function ProductCard({
         <AnimatePresence>
           {showNotification && (
             <motion.div
-              initial={{ opacity: 0, y: 20, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.9 }}
-              className="absolute bottom-2 sm:bottom-3 left-2 sm:left-3 right-2 sm:right-3 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm py-2 sm:py-3 px-3 sm:px-4 rounded-lg shadow-lg text-center text-xs sm:text-sm font-medium border border-gray-100 dark:border-gray-700 text-gray-900 dark:text-gray-100"
+              initial={{ opacity: 0, y: 20, scale: 0.8, x: '-50%' }}
+              animate={{ 
+                opacity: 1, 
+                y: 0, 
+                scale: 1,
+                x: '-50%',
+              }}
+              exit={{ 
+                opacity: 0, 
+                y: -10, 
+                scale: 0.8,
+                x: '-50%',
+              }}
+              transition={{
+                type: "spring",
+                stiffness: 300,
+                damping: 25,
+              }}
+              className="absolute bottom-2 sm:bottom-3 left-1/2 transform -translate-x-1/2 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm py-2 sm:py-3 px-3 sm:px-4 rounded-lg shadow-xl text-center text-xs sm:text-sm font-medium border border-gray-100 dark:border-gray-700 text-gray-900 dark:text-gray-100 z-50"
             >
-              {notificationMessage}
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
+                className="flex items-center justify-center gap-2"
+              >
+                {notificationMessage.includes('Added') && (
+                  <motion.div
+                    initial={{ scale: 0, rotate: -180 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
+                  >
+                    <FiCheck className="w-4 h-4 text-green-500" />
+                  </motion.div>
+                )}
+                <span>{notificationMessage}</span>
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -402,7 +473,7 @@ export default function ProductCard({
       {/* Product Info */}
       <div className="p-3 sm:p-4 text-center flex flex-col flex-grow">
         <h3 
-          className="font-medium text-primary dark:text-[#E6C547] text-sm sm:text-lg mb-2 line-clamp-2 cursor-pointer hover:text-accent dark:hover:text-[#E6C547]/80 transition-colors min-h-[2.5rem] sm:min-h-[3rem] flex items-center justify-center"
+          className="!font-cormorant font-medium text-primary dark:text-[#E6C547] text-sm sm:text-lg mb-2 line-clamp-2 cursor-pointer hover:text-accent dark:hover:text-[#E6C547]/80 transition-colors min-h-[2.5rem] sm:min-h-[3rem] flex items-center justify-center"
           onClick={handleProductClick}
         >
           {name}
@@ -418,10 +489,18 @@ export default function ProductCard({
         
         {/* Add to Cart Button */}
         <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+          whileHover={!isAddedToCart && !isAddingToCart && stockStatus !== 'out-of-stock' && isActive ? { scale: 1.02 } : {}}
+          whileTap={!isAddedToCart && !isAddingToCart && stockStatus !== 'out-of-stock' && isActive ? { scale: 0.98 } : {}}
           onClick={handleAddToCart}
           disabled={stockStatus === 'out-of-stock' || !isActive || isAddingToCart}
+          animate={isAddedToCart ? {
+            scale: [1, 1.05, 1],
+            backgroundColor: ['#10b981', '#059669', '#10b981'],
+          } : {}}
+          transition={isAddedToCart ? {
+            duration: 0.6,
+            times: [0, 0.5, 1],
+          } : {}}
           className={`add-to-cart-button w-full mt-auto py-2 sm:py-3 px-3 sm:px-4 rounded-lg font-medium transition-all duration-200 text-sm sm:text-base ${
             isAddedToCart 
               ? 'bg-green-500 dark:bg-green-600 text-white' 
@@ -433,10 +512,26 @@ export default function ProductCard({
           }`}
         >
           {isAddedToCart ? (
-            <span className="flex items-center justify-center gap-2">
-              <FiCheck className="w-4 h-4" />
+            <motion.span 
+              className="flex items-center justify-center gap-2"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <motion.div
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ 
+                  type: "spring",
+                  stiffness: 200,
+                  damping: 15,
+                  delay: 0.1
+                }}
+              >
+                <FiCheck className="w-4 h-4" />
+              </motion.div>
               Added to Cart
-            </span>
+            </motion.span>
           ) : isAddingToCart ? (
             <span className="flex items-center justify-center gap-2">
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

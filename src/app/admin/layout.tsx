@@ -9,6 +9,7 @@ import './admin.css';
 import { 
   MdDashboard as LayoutDashboard,
   MdInventory as Package,
+  MdGridOn as Collections,
   MdFolderOpen as FolderOpen,
   MdImage as Image,
   MdShoppingCart as ShoppingCart,
@@ -27,6 +28,7 @@ import {
 const navigation = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { name: 'Products', href: '/admin/products', icon: Package },
+  { name: 'Collections', href: '/admin/collections', icon: Collections },
   { name: 'Categories', href: '/admin/categories', icon: FolderOpen },
   { name: 'Banners', href: '/admin/banners', icon: Image },
   { name: 'Orders', href: '/admin/orders', icon: ShoppingCart },
@@ -97,7 +99,7 @@ export default function AdminLayout({
   useEffect(() => {
     if (!isLoading && !isLogoutInProgress) {
       if (!isAuthenticated) {
-        router.push('/auth/login');
+        router.push('/');
         return;
       }
       if (!isAdmin) {
@@ -137,12 +139,12 @@ export default function AdminLayout({
       setIsLoggingOut(true);
       setIsLogoutInProgress(true);
       await logout();
-      // Redirect to login page after successful logout
-      router.push('/auth/login');
+      // Redirect to home page after successful logout
+      router.push('/');
     } catch (error) {
       console.error('Logout error:', error);
-      // Force logout even if API call fails and redirect to login
-      router.push('/auth/login');
+      // Force logout even if API call fails and redirect to home page
+      router.push('/');
     } finally {
       setIsLoggingOut(false);
       setIsLogoutInProgress(false);

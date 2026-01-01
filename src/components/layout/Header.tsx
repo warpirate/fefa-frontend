@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSearch } from '@/contexts/SearchContext';
 import { useCart } from '@/contexts/CartContext';
 import { useWishlist } from '@/contexts/WishlistContext';
+import { useLoginModal } from '@/contexts/LoginModalContext';
 import UserDropdown from '@/components/auth/UserDropdown';
 import SearchSuggestions from '@/components/ui/SearchSuggestions';
 import ThemeToggle from '@/components/ui/ThemeToggle';
@@ -19,14 +20,19 @@ import '@/styles/components/layout/Header.css';
 
 const navigation = [
   { 
-    name: 'GIFT', 
-    href: '/gift',
-    isIcon: true,
+    name: 'HOME', 
+    href: '/',
     hasDropdown: false
   },
   { 
     name: 'COLLECTIONS', 
     href: '/collections',
+    hasDropdown: false
+  },
+  { 
+    name: 'GIFT', 
+    href: '/gift',
+    isIcon: true,
     hasDropdown: false
   },
 ];
@@ -71,6 +77,7 @@ export default function Header() {
   const { setSearchQuery } = useSearch();
   const { totalQuantity } = useCart();
   const { itemCount: wishlistCount } = useWishlist();
+  const { openLoginModal } = useLoginModal();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -258,7 +265,7 @@ export default function Header() {
                         <div className={`${item.name === 'GIFT' ? 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'} gap-4 sm:gap-6 lg:gap-8`}>
                           {(item as any).dropdown.categories.map((category: any, index: number) => (
                             <div key={index} className="space-y-4">
-                              <h3 className="text-[#4B006E] text-lg sm:text-xl font-script mb-2 sm:mb-4 border-b border-[#4B006E] pb-1 sm:pb-2">
+                              <h3 className="text-[#4B006E] text-lg sm:text-xl font-cormorant mb-2 sm:mb-4 border-b border-[#4B006E] pb-1 sm:pb-2">
                                 {category.title}
                               </h3>
                               {category.items.length > 0 ? (
@@ -345,26 +352,26 @@ export default function Header() {
             
             {/* Auth Section */}
             <div className="hidden md:flex items-center">
-               {isLoading ? (
-                 <div className="w-8 h-8 border-2 border-[#DBC078] border-t-transparent rounded-full animate-spin"></div>
-               ) : isAuthenticated ? (
-                 <UserDropdown />
-               ) : (
-                 <div className="flex items-center gap-3">
-                   <Link 
-                     href="/auth/login" 
-                     className="px-4 py-2 text-sm font-medium text-[#DBC078] hover:text-[#cfb570] transition-colors whitespace-nowrap"
-                   >
-                     Sign In
-                   </Link>
-                   <Link 
-                     href="/auth/register" 
-                     className="px-4 py-2 text-sm font-medium bg-[#DBC078] text-[#470031] rounded-lg hover:bg-[#cfb570] transition-colors whitespace-nowrap"
-                   >
-                     Sign Up
-                   </Link>
-                 </div>
-               )}
+              {isLoading ? (
+                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+              ) : isAuthenticated ? (
+                <UserDropdown />
+              ) : (
+                <div className="flex items-center space-x-2">
+                  <Link 
+                    href="/auth/login" 
+                    className="px-4 py-2 text-sm font-medium text-primary dark:text-[#E6C547] hover:text-accent dark:hover:text-[#E6C547]/80 transition-colors"
+                  >
+                    Sign In
+                  </Link>
+                  <Link 
+                    href="/auth/register" 
+                    className="px-4 py-2 text-sm font-medium bg-primary dark:bg-[#6B1A7A] text-white rounded-lg hover:bg-primary/90 dark:hover:bg-[#6B1A7A]/90 transition-colors"
+                  >
+                    Sign Up
+                  </Link>
+                </div>
+              )}
             </div>
             </div>
           </div>
@@ -432,7 +439,7 @@ export default function Header() {
                         <div className="space-y-6">
                           {(item as any).dropdown.categories.map((category: any, index: number) => (
                             <div key={index} className="space-y-3">
-                              <h3 className="text-lg font-bold uppercase tracking-wide text-[#4B006E] border-b border-[#4B006E] pb-2">
+                              <h3 className="text-lg font-bold uppercase tracking-wide text-[#4B006E] border-b border-[#4B006E] pb-2 font-cormorant">
                                 {category.title}
                               </h3>
                               <ul className="space-y-2">
@@ -538,14 +545,14 @@ export default function Header() {
                 <FiUser className="w-4 h-4 sm:w-5 sm:h-5 md:w-5 md:h-5 lg:w-6 lg:h-6" />
               </button>
             ) : (
-              <Link 
-                href="/auth/login" 
+              <button 
+                onClick={() => openLoginModal()}
                 className="w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 lg:w-12 lg:h-12 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-primary dark:text-[#E6C547] hover:transform hover:-translate-y-1 transition-all duration-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                 onMouseEnter={() => setHoveredIcon('PROFILE')}
                 onMouseLeave={() => setHoveredIcon(null)}
               >
                 <FiUser className="w-4 h-4 sm:w-5 sm:h-5 md:w-5 md:h-5 lg:w-6 lg:h-6" />
-              </Link>
+              </button>
             )}
             
             {/* Hover Tooltip */}
@@ -605,9 +612,11 @@ export default function Header() {
                     <div className="border-t border-gray-100 pt-2 mt-2">
                       <button
                         className="flex items-center space-x-3 py-2 text-sm text-red-600 hover:text-red-700 transition-colors w-full"
-                        onClick={() => {
+                        onClick={async () => {
                           setOpenDropdown(null);
-                          logout();
+                          await logout();
+                          // Redirect to home after logout
+                          router.push('/');
                         }}
                       >
                         <FiLogOut className="w-4 h-4" />

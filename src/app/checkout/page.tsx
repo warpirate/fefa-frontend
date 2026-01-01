@@ -7,6 +7,7 @@ import { FiArrowLeft, FiArrowRight, FiCheck, FiCreditCard, FiMapPin, FiPackage, 
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import { useCheckout, CheckoutProvider } from '@/contexts/CheckoutContext';
+import { useLoginModal } from '@/contexts/LoginModalContext';
 import MainLayout from '@/components/layout/MainLayout';
 import '@/styles/components/checkout/Checkout.css';
 
@@ -27,6 +28,7 @@ function CheckoutContent() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
   const { itemCount, isLoading: cartLoading } = useCart();
+  const { openLoginModal } = useLoginModal();
   const {
     currentStep,
     setCurrentStep,
@@ -38,10 +40,11 @@ function CheckoutContent() {
     clearError
   } = useCheckout();
 
-  // Redirect if not authenticated or cart is empty
+  // Show login modal if not authenticated, redirect if cart is empty
   useEffect(() => {
     if (!isAuthenticated) {
-      router.push('/auth/login?redirect=/checkout');
+      // Open login modal with redirect to checkout after login
+      openLoginModal('/checkout');
       return;
     }
     
@@ -49,7 +52,7 @@ function CheckoutContent() {
       router.push('/cart');
       return;
     }
-  }, [isAuthenticated, cartLoading, itemCount, router]);
+  }, [isAuthenticated, cartLoading, itemCount, router, openLoginModal]);
 
   // Clear error when step changes
   useEffect(() => {
@@ -81,7 +84,8 @@ function CheckoutContent() {
     }
   };
 
-  if (!isAuthenticated || cartLoading) {
+  // Show loading only if cart is loading (not if just not authenticated - login modal will handle that)
+  if (cartLoading) {
     return (
       <MainLayout>
         <div className="min-h-screen pt-32 pb-16 px-4">
@@ -89,6 +93,27 @@ function CheckoutContent() {
             <div className="flex flex-col items-center justify-center h-64">
               <div className="w-16 h-16 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
               <p className="mt-4 text-primary font-medium">Loading checkout...</p>
+            </div>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  // If not authenticated, show message (login modal will be shown by useEffect)
+  if (!isAuthenticated) {
+    return (
+      <MainLayout>
+        <div className="min-h-screen pt-32 pb-16 px-4">
+          <div className="container mx-auto max-w-6xl">
+            <div className="flex flex-col items-center justify-center h-64">
+              <div className="w-20 h-20 bg-soft-pink-100 rounded-full flex items-center justify-center mb-6">
+                <FiUser className="w-10 h-10 text-accent" />
+              </div>
+              <h2 className="text-2xl font-medium text-primary mb-2">Please Login to Continue</h2>
+              <p className="text-gray-500 mb-8 max-w-md text-center">
+                You need to be logged in to proceed with checkout. Please login using the modal.
+              </p>
             </div>
           </div>
         </div>

@@ -238,6 +238,99 @@ class AuthService {
     }
   }
 
+  // Send email OTP
+  async sendEmailOTP(email) {
+    try {
+      const response = await fetch(`${this.baseURL}/auth/send-email-otp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const textResponse = await response.text();
+        console.error('Non-JSON response received:', textResponse);
+        throw new Error(`Server returned non-JSON response: ${textResponse.substring(0, 100)}...`);
+      }
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || data.message || 'Failed to send email OTP');
+      }
+
+      return data.data;
+    } catch (error) {
+      console.error('Send email OTP error:', error);
+      throw error;
+    }
+  }
+
+  // Verify email OTP
+  async verifyEmailOTP(email, otp) {
+    try {
+      const response = await fetch(`${this.baseURL}/auth/verify-email-otp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, otp }),
+      });
+
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const textResponse = await response.text();
+        console.error('Non-JSON response received:', textResponse);
+        throw new Error(`Server returned non-JSON response: ${textResponse.substring(0, 100)}...`);
+      }
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || data.message || 'Email OTP verification failed');
+      }
+
+      return data.data;
+    } catch (error) {
+      console.error('Verify email OTP error:', error);
+      throw error;
+    }
+  }
+
+  // Verify OTP with backend
+  async verifyOTP(idToken, phone, email) {
+    try {
+      const response = await fetch(`${this.baseURL}/auth/verify-otp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ idToken, phone, email }),
+      });
+
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const textResponse = await response.text();
+        console.error('Non-JSON response received:', textResponse);
+        throw new Error(`Server returned non-JSON response: ${textResponse.substring(0, 100)}...`);
+      }
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || data.message || 'OTP verification failed');
+      }
+
+      return data.data;
+    } catch (error) {
+      console.error('OTP verification error:', error);
+      throw error;
+    }
+  }
+
   // Verify Firebase Google ID token with backend
   async verifyGoogleToken(idToken) {
     try {

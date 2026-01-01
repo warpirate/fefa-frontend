@@ -147,19 +147,19 @@ export default function OrdersPage() {
 
   return (
     <MainLayout>
-      <div className="min-h-screen bg-gradient-to-br from-soft-pink-100 to-soft-pink-200 py-8">
-        <div className="container mx-auto px-4">
+      <div className="min-h-screen bg-gradient-to-br from-soft-pink-100 to-soft-pink-200 py-4 sm:py-6 md:py-8">
+        <div className="container mx-auto px-3 sm:px-4 md:px-6">
           <div className="max-w-6xl mx-auto">
             {/* Header */}
-            <div className="text-center mb-8">
-              <h1 className="text-4xl md:text-5xl font-script text-primary mb-4">My Orders</h1>
-              <p className="text-dark-gray text-lg">
+            <div className="text-center mb-6 sm:mb-8">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-script text-primary mb-2 sm:mb-4">My Orders</h1>
+              <p className="text-dark-gray text-base sm:text-lg px-4">
                 Track and manage your jewelry orders
               </p>
             </div>
 
             {/* Filter Tabs */}
-            <div className="orders-filter-tabs mb-8">
+            <div className="orders-filter-tabs mb-6 sm:mb-8">
               <button
                 className={`filter-tab ${selectedFilter === 'all' ? 'active' : ''}`}
                 onClick={() => setSelectedFilter('all')}
