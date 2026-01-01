@@ -45,7 +45,7 @@ export default function UserDropdown() {
         <span className="user-name">
           {user.firstName}
         </span>
-        <FiChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <FiChevronDown className={`w-4 h-4 transition-transform text-[#DBC078] ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {/* Dropdown Menu */}

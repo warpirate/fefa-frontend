@@ -7,33 +7,43 @@
   gap: 0.5rem;
   padding: 0.5rem 0.75rem;
   background-color: transparent;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #DBC078;
   border-radius: 0.5rem;
   cursor: pointer;
   transition: all 0.2s ease;
-  color: var(--primary);
+  color: #DBC078;
 }
 
 .user-button:hover {
-  background-color: var(--soft-pink-100);
-  border-color: var(--primary);
+  background-color: rgba(219, 192, 120, 0.1);
+  border-color: #cfb570;
+  color: #cfb570;
 }
 
 .user-avatar {
   width: 2rem;
   height: 2rem;
-  background-color: var(--soft-pink-100);
+  background-color: rgba(219, 192, 120, 0.2);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--primary);
+  color: #DBC078;
+}
+
+.user-button:hover .user-avatar {
+  background-color: rgba(207, 181, 112, 0.2);
+  color: #cfb570;
 }
 
 .user-name {
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--primary);
+  color: #DBC078;
+}
+
+.user-button:hover .user-name {
+  color: #cfb570;
 }
 
 /* User Dropdown */

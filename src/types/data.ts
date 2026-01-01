@@ -129,6 +129,7 @@ export interface CollectionCategory {
 export interface CollectionOccasion {
   name: string;
   value: string;
+  image?: string;
 }
 
 export interface TrendingLook {

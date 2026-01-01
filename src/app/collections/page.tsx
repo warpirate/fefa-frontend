@@ -72,18 +72,32 @@ const itemsPerPageOptions = [
 function CollectionsContent() {
   const searchParams = useSearchParams();
   const { searchQuery, clearSearch, isSearchActive } = useSearch();
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(['all']);
-  const [selectedOccasions, setSelectedOccasions] = useState<string[]>(['all']);
+  
+  // Initialize state from URL params immediately to prevent flash
+  const initialOccasion = searchParams.get('occasion') || null;
+  const initialCategory = searchParams.get('category') || 'all';
+  const initialSearch = searchParams.get('search') || '';
+  
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(
+    initialCategory !== 'all' ? [initialCategory] : ['all']
+  );
+  const [selectedOccasions, setSelectedOccasions] = useState<string[]>(
+    initialOccasion ? [initialOccasion] : ['all']
+  );
   const [sortBy, setSortBy] = useState('newest');
   const [priceRange, setPriceRange] = useState([0, 100000]); // Increased default maxPrice to show all products
   
   // Pending filter states (not applied yet)
-  const [pendingCategories, setPendingCategories] = useState<string[]>(['all']);
-  const [pendingOccasions, setPendingOccasions] = useState<string[]>(['all']);
+  const [pendingCategories, setPendingCategories] = useState<string[]>(
+    initialCategory !== 'all' ? [initialCategory] : ['all']
+  );
+  const [pendingOccasions, setPendingOccasions] = useState<string[]>(
+    initialOccasion ? [initialOccasion] : ['all']
+  );
   const [pendingPriceRange, setPendingPriceRange] = useState([0, 100000]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
-  const [isOccasionDropdownOpen, setIsOccasionDropdownOpen] = useState(false);
+  const [isOccasionDropdownOpen, setIsOccasionDropdownOpen] = useState(!!initialOccasion);
   const [itemsPerPage, setItemsPerPage] = useState(9);
   const [currentPage, setCurrentPage] = useState(1);
   const [isLargeScreen, setIsLargeScreen] = useState(false);
@@ -102,10 +116,10 @@ function CollectionsContent() {
   });
   
   // Search state
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(initialSearch);
   
   // Occasion selection state (for the new UI)
-  const [selectedOccasion, setSelectedOccasion] = useState<string | null>(null);
+  const [selectedOccasion, setSelectedOccasion] = useState<string | null>(initialOccasion);
   const [occasionCounts, setOccasionCounts] = useState<Record<string, number>>({});
   
   // Load occasion product counts
@@ -116,7 +130,7 @@ function CollectionsContent() {
       const counts: Record<string, number> = {};
       const occasionsList = occasions.filter(occ => occ.value !== 'all');
       
-      // First try to get counts from API
+      // Get counts from API (always use API for real-time data)
       await Promise.all(
         occasionsList.map(async (occasion) => {
           try {
@@ -125,29 +139,15 @@ function CollectionsContent() {
               limit: 1,
               page: 1
             });
-            counts[occasion.value] = result.pagination.totalProducts;
+            // Use the totalProducts from pagination which reflects the actual count
+            counts[occasion.value] = result.pagination?.totalProducts || 0;
           } catch (error) {
             console.error(`Error loading count for ${occasion.value}:`, error);
+            // If API fails, set to 0 (don't use JSON fallback for counts to ensure real-time data)
             counts[occasion.value] = 0;
           }
         })
       );
-      
-      // If all counts are 0, try to get counts from JSON fallback
-      const allZero = Object.values(counts).every(count => count === 0);
-      if (allZero) {
-        try {
-          const jsonProducts = await loadCollectionsProductsData();
-          occasionsList.forEach((occasion) => {
-            const matchingProducts = jsonProducts.filter((product: Product) => 
-              product.occasions && product.occasions.includes(occasion.value)
-            );
-            counts[occasion.value] = matchingProducts.length;
-          });
-        } catch (error) {
-          console.error('Error loading counts from JSON:', error);
-        }
-      }
       
       setOccasionCounts(counts);
     } catch (error) {
@@ -185,6 +185,29 @@ function CollectionsContent() {
     if (occasions.length > 0) {
       loadOccasionCounts();
     }
+  }, [occasions.length, loadOccasionCounts]);
+
+  // Refresh occasion counts when page becomes visible (to reflect admin updates)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && occasions.length > 0) {
+        loadOccasionCounts();
+      }
+    };
+
+    const handleFocus = () => {
+      if (occasions.length > 0) {
+        loadOccasionCounts();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, [occasions.length, loadOccasionCounts]);
 
   // Load filtered products
@@ -352,30 +375,47 @@ function CollectionsContent() {
     setIsOccasionDropdownOpen(true);
   };
 
-  // Handle search and category from URL params
+  // Handle search, category, and occasion from URL params (for URL changes after initial load)
   useEffect(() => {
     const searchParam = searchParams.get('search');
     const categoryParam = searchParams.get('category');
+    const occasionParam = searchParams.get('occasion');
     
-    if (searchParam) {
-      setSearchTerm(searchParam);
-    } else {
-      // Clear search term when no URL search param
-      setSearchTerm('');
-      if (isSearchActive) {
-        clearSearch();
+    // Only update if URL params have changed (to avoid unnecessary re-renders and glitches)
+    if (searchParam !== searchTerm) {
+      if (searchParam) {
+        setSearchTerm(searchParam);
+      } else {
+        // Clear search term when no URL search param
+        setSearchTerm('');
+        if (isSearchActive) {
+          clearSearch();
+        }
       }
     }
     
     // Handle category filter from URL
-    if (categoryParam) {
+    if (categoryParam && !selectedCategories.includes(categoryParam)) {
       setSelectedCategories([categoryParam]);
       setPendingCategories([categoryParam]);
-    } else {
+    } else if (!categoryParam && !selectedCategories.includes('all')) {
       setSelectedCategories(['all']);
       setPendingCategories(['all']);
     }
-  }, [searchParams, clearSearch, isSearchActive]);
+    
+    // Handle occasion filter from URL - automatically select and show products
+    if (occasionParam && selectedOccasion !== occasionParam) {
+      setSelectedOccasion(occasionParam);
+      setSelectedOccasions([occasionParam]);
+      setPendingOccasions([occasionParam]);
+      setIsOccasionDropdownOpen(true);
+    } else if (!occasionParam && selectedOccasion && !searchTerm) {
+      // Only clear if we're not already showing products from a previous selection
+      setSelectedOccasion(null);
+      setSelectedOccasions(['all']);
+      setPendingOccasions(['all']);
+    }
+  }, [searchParams, clearSearch, isSearchActive, searchTerm, selectedCategories, selectedOccasion]);
   
   // Load products when any filter changes (only if occasion is selected or search is active)
   useEffect(() => {
@@ -546,8 +586,8 @@ function CollectionsContent() {
         </motion.div>
       </section>
 
-      {/* Occasion Selection View - Show when no occasion selected and no search */}
-      {!selectedOccasion && !searchTerm && (
+      {/* Occasion Selection View - Show when no occasion selected and no search (and not loading with initial occasion) */}
+      {!selectedOccasion && !searchTerm && !isLoading && (
         <section className="py-12 md:py-16">
           <div className="container mx-auto px-4">
             {/* Featured Occasions Hero Section */}

@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { FiZap, FiAward, FiHeart, FiStar } from 'react-icons/fi';
 import MainLayout from '@/components/layout/MainLayout';
 import Button from '@/components/ui/Button';
 import ProductCard from '@/components/product/ProductCard';
@@ -14,12 +15,17 @@ import { useDataContext } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import dataService from '@/services/dataService';
 import { 
+  loadCollectionsOccasionsData,
+  loadProductsWithFilters
+} from '@/utils/dataLoader';
+import { 
   CarouselItem, 
   Category, 
   Feature, 
   Product, 
   TrendingLook, 
-  Testimonial 
+  Testimonial,
+  CollectionOccasion
 } from '@/types/data';
 
 // Import category images for fallback
@@ -64,6 +70,16 @@ export default function Home() {
   const [featuredProductsSliderRef, setFeaturedProductsSliderRef] = useState<HTMLDivElement | null>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
+  const [categoriesSliderRef, setCategoriesSliderRef] = useState<HTMLDivElement | null>(null);
+  const [canScrollCategoriesLeft, setCanScrollCategoriesLeft] = useState(false);
+  const [canScrollCategoriesRight, setCanScrollCategoriesRight] = useState(true);
+  const [occasions, setOccasions] = useState<CollectionOccasion[]>([]);
+  const [occasionCounts, setOccasionCounts] = useState<Record<string, number>>({});
+  const [occasionsSliderRef, setOccasionsSliderRef] = useState<HTMLDivElement | null>(null);
+  const [canScrollOccasionsLeft, setCanScrollOccasionsLeft] = useState(false);
+  const [canScrollOccasionsRight, setCanScrollOccasionsRight] = useState(true);
+  const [email, setEmail] = useState('');
+  const [isSubscribing, setIsSubscribing] = useState(false);
   
   // Get data from context
   const { 
@@ -130,6 +146,60 @@ export default function Home() {
     loadFeaturedProducts();
   }, []);
 
+  // Load occasions data
+  useEffect(() => {
+    const loadOccasions = async () => {
+      try {
+        const occasionsData = await loadCollectionsOccasionsData();
+        setOccasions(occasionsData);
+      } catch (error) {
+        console.error('Failed to load occasions:', error);
+        setOccasions([]);
+      }
+    };
+
+    loadOccasions();
+  }, []);
+
+  // Load occasion product counts
+  useEffect(() => {
+    const loadOccasionCounts = async () => {
+      if (occasions.length === 0) return;
+      
+      try {
+        const counts: Record<string, number> = {};
+        const occasionsList = occasions.filter(occ => occ.value !== 'all');
+        
+        // Get counts from API (always use API for real-time data)
+        await Promise.all(
+          occasionsList.map(async (occasion) => {
+            try {
+              const result = await loadProductsWithFilters({
+                occasion: occasion.value,
+                limit: 1,
+                page: 1
+              });
+              // Use the totalProducts from pagination which reflects the actual count
+              counts[occasion.value] = result.pagination?.totalProducts || 0;
+            } catch (error) {
+              console.error(`Error loading count for ${occasion.value}:`, error);
+              // If API fails, set to 0 (don't use JSON fallback for counts to ensure real-time data)
+              counts[occasion.value] = 0;
+            }
+          })
+        );
+        
+        setOccasionCounts(counts);
+      } catch (error) {
+        console.error('Error loading occasion counts:', error);
+      }
+    };
+
+    if (occasions.length > 0) {
+      loadOccasionCounts();
+    }
+  }, [occasions]);
+
   // Update scroll state when slider scrolls
   useEffect(() => {
     if (!featuredProductsSliderRef) return;
@@ -157,6 +227,60 @@ export default function Home() {
       window.removeEventListener('resize', handleResize);
     };
   }, [featuredProductsSliderRef]);
+
+  // Update scroll state for categories carousel
+  useEffect(() => {
+    if (!categoriesSliderRef) return;
+    
+    const updateScrollState = () => {
+      const scrollLeft = categoriesSliderRef.scrollLeft;
+      const maxScroll = categoriesSliderRef.scrollWidth - categoriesSliderRef.clientWidth;
+      
+      setCanScrollCategoriesLeft(scrollLeft > 10);
+      setCanScrollCategoriesRight(scrollLeft < maxScroll - 10);
+    };
+    
+    categoriesSliderRef.addEventListener('scroll', updateScrollState);
+    updateScrollState(); // Initial check
+    
+    // Also check on resize
+    const handleResize = () => {
+      updateScrollState();
+    };
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      categoriesSliderRef.removeEventListener('scroll', updateScrollState);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [categoriesSliderRef]);
+
+  // Update scroll state for occasions carousel
+  useEffect(() => {
+    if (!occasionsSliderRef) return;
+    
+    const updateScrollState = () => {
+      const scrollLeft = occasionsSliderRef.scrollLeft;
+      const maxScroll = occasionsSliderRef.scrollWidth - occasionsSliderRef.clientWidth;
+      
+      setCanScrollOccasionsLeft(scrollLeft > 10);
+      setCanScrollOccasionsRight(scrollLeft < maxScroll - 10);
+    };
+    
+    occasionsSliderRef.addEventListener('scroll', updateScrollState);
+    updateScrollState(); // Initial check
+    
+    // Also check on resize
+    const handleResize = () => {
+      updateScrollState();
+    };
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      occasionsSliderRef.removeEventListener('scroll', updateScrollState);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [occasionsSliderRef]);
 
   // Handle authentication redirect
   useEffect(() => {
@@ -317,12 +441,205 @@ export default function Home() {
     });
   };
 
+  // Categories slider navigation
+  const scrollCategories = (direction: 'left' | 'right') => {
+    if (!categoriesSliderRef) return;
+    
+    const cardWidth = 320; // Approximate card width including gap (larger for categories)
+    const scrollAmount = cardWidth * 2; // Scroll 2 cards at a time
+    const maxScroll = categoriesSliderRef.scrollWidth - categoriesSliderRef.clientWidth;
+    
+    const newScroll = direction === 'left' 
+      ? Math.max(0, categoriesSliderRef.scrollLeft - scrollAmount)
+      : Math.min(maxScroll, categoriesSliderRef.scrollLeft + scrollAmount);
+    
+    categoriesSliderRef.scrollTo({
+      left: newScroll,
+      behavior: 'smooth'
+    });
+  };
+
+  // Occasions slider navigation
+  const scrollOccasions = (direction: 'left' | 'right') => {
+    if (!occasionsSliderRef) return;
+    
+    const cardWidth = 320; // Approximate card width including gap (same as categories)
+    const scrollAmount = cardWidth * 2; // Scroll 2 cards at a time
+    const maxScroll = occasionsSliderRef.scrollWidth - occasionsSliderRef.clientWidth;
+    
+    const newScroll = direction === 'left' 
+      ? Math.max(0, occasionsSliderRef.scrollLeft - scrollAmount)
+      : Math.min(maxScroll, occasionsSliderRef.scrollLeft + scrollAmount);
+    
+    occasionsSliderRef.scrollTo({
+      left: newScroll,
+      behavior: 'smooth'
+    });
+  };
+
   return (
     <DataLoader>
       <MainLayout>
       <div className="overflow-x-hidden">
+      {/* Brand Banner Section */}
+      <section 
+        id="brand-banner"
+        className="relative py-4 xs:py-5 sm:py-6 overflow-hidden"
+        style={{ 
+          background: 'linear-gradient(135deg, #470031 0%, #470031 50%, #470031 100%)'
+        }}
+      >
+        {/* Decorative background elements */}
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute top-10 left-10 w-24 h-24 rounded-full blur-2xl" style={{ backgroundColor: '#cfb570' }}></div>
+          <div className="absolute bottom-10 right-10 w-32 h-32 rounded-full blur-2xl" style={{ backgroundColor: '#DBC078' }}></div>
+        </div>
+        
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="flex flex-col items-center justify-center text-center">
+            {/* Logo */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8, y: -20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+              className="mb-2 xs:mb-3"
+            >
+              <div className="relative w-16 h-16 xs:w-20 xs:h-20 sm:w-24 sm:h-24">
+                <Image
+                  src="/logo.jpg"
+                  alt="FEFA Logo"
+                  fill
+                  className="object-contain drop-shadow-lg"
+                  priority
+                  sizes="(max-width: 475px) 64px, (max-width: 640px) 80px, 96px"
+                />
+              </div>
+            </motion.div>
+
+            {/* Brand Name */}
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl font-script mb-1 xs:mb-2"
+              style={{ 
+                color: '#DBC078',
+                textShadow: '0 2px 8px rgba(219, 192, 120, 0.5), 0 4px 16px rgba(0, 0, 0, 0.3)'
+              }}
+            >
+              fefa
+            </motion.h1>
+
+            {/* Tagline */}
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="text-xs xs:text-sm sm:text-base mb-4 xs:mb-5 font-light tracking-wide"
+              style={{ 
+                color: '#dcc996',
+                textShadow: '0 1px 4px rgba(0, 0, 0, 0.4)'
+              }}
+            >
+              A CELEBRATION OF FEMININITY
+            </motion.p>
+
+            {/* Brand Values - Compact Grid */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              className="grid grid-cols-2 sm:grid-cols-4 gap-2 xs:gap-3 sm:gap-4 max-w-3xl w-full mb-4 xs:mb-5"
+            >
+              {[
+                { Icon: FiZap, title: "Handcrafted Excellence" },
+                { Icon: FiAward, title: "Premium Quality" },
+                { Icon: FiHeart, title: "Timeless Elegance" },
+                { Icon: FiStar, title: "Authentic Beauty" }
+              ].map((value, index) => (
+                <motion.div
+                  key={value.title}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.4 + index * 0.1 }}
+                  className="rounded-lg p-2 xs:p-3 border-2 transition-all duration-300 hover:scale-105"
+                  style={{ 
+                    borderColor: '#cfb570',
+                    backgroundColor: 'rgba(207, 181, 112, 0.15)',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(219, 192, 120, 0.2)'
+                  }}
+                >
+                  <div className="flex justify-center mb-1 xs:mb-2">
+                    <value.Icon 
+                      className="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7" 
+                      style={{ 
+                        color: '#DBC078',
+                        filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3))'
+                      }} 
+                    />
+                  </div>
+                  <h3 
+                    className="font-semibold text-xs leading-tight text-center" 
+                    style={{ 
+                      color: '#DBC078',
+                      textShadow: '0 1px 3px rgba(0, 0, 0, 0.4)'
+                    }}
+                  >
+                    {value.title}
+                  </h3>
+                </motion.div>
+              ))}
+            </motion.div>
+
+            {/* Scroll Down Button */}
+            <motion.button
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.7 }}
+              onClick={() => {
+                const categoriesSection = document.getElementById('categories-section');
+                if (categoriesSection) {
+                  categoriesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+              }}
+              className="group flex flex-col items-center gap-1 hover:opacity-80 transition-opacity duration-300"
+              aria-label="Scroll to categories"
+            >
+              <span 
+                className="text-xs font-light tracking-wide" 
+                style={{ 
+                  color: '#dcc996',
+                  textShadow: '0 1px 3px rgba(0, 0, 0, 0.4)'
+                }}
+              >
+                Explore Collections
+              </span>
+              <motion.div
+                animate={{ y: [0, 8, 0] }}
+                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                className="w-5 h-8 rounded-full border-2 flex items-start justify-center p-1"
+                style={{ 
+                  borderColor: '#DBC078',
+                  boxShadow: '0 2px 8px rgba(219, 192, 120, 0.4)'
+                }}
+              >
+                <motion.div
+                  animate={{ y: [0, 10, 0] }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                  className="w-1.5 h-1.5 rounded-full"
+                  style={{ 
+                    backgroundColor: '#DBC078',
+                    boxShadow: '0 0 8px rgba(219, 192, 120, 0.6)'
+                  }}
+                />
+              </motion.div>
+            </motion.button>
+          </div>
+        </div>
+      </section>
+
       {/* Jewelry Categories Section */}
-      <section className="pb-8 pt-12 bg-white dark:bg-[#0a0a0a] transition-colors duration-300">
+      <section id="categories-section" className="pb-8 pt-12 bg-white dark:bg-[#0a0a0a] transition-colors duration-300">
         <div className="container mx-auto px-4">
           {fieldErrors.categories ? (
             <ErrorDisplay 
@@ -336,44 +653,102 @@ export default function Home() {
               }}
             />
           ) : (
-            <>
-              {/* Categories container with horizontal scroll */}
+            <div className="relative group">
+              {/* Navigation Arrows - Invisible by default, show on hover */}
+              <button
+                onClick={() => scrollCategories('left')}
+                disabled={!canScrollCategoriesLeft}
+                className={`absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700 shadow-lg rounded-full p-2 sm:p-3 transition-all duration-200 opacity-0 group-hover:opacity-100 ${
+                  !canScrollCategoriesLeft ? 'cursor-not-allowed' : 'hover:scale-110'
+                } flex items-center justify-center`}
+                aria-label="Previous categories"
+              >
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              
+              <button
+                onClick={() => scrollCategories('right')}
+                disabled={!canScrollCategoriesRight}
+                className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700 shadow-lg rounded-full p-2 sm:p-3 transition-all duration-200 opacity-0 group-hover:opacity-100 ${
+                  !canScrollCategoriesRight ? 'cursor-not-allowed' : 'hover:scale-110'
+                } flex items-center justify-center`}
+                aria-label="Next categories"
+              >
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+
+              {/* Categories Slider Container */}
               <div 
+                ref={setCategoriesSliderRef}
                 id="category-container"
-                className="flex gap-3 sm:gap-4 md:gap-6 lg:gap-8 overflow-x-auto scrollbar-hide pb-2"
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                className="flex gap-3 sm:gap-4 md:gap-6 overflow-x-auto overflow-y-hidden scrollbar-hide pb-2 cursor-grab active:cursor-grabbing px-8 sm:px-10 md:px-12 lg:px-16"
+                style={{ 
+                  scrollbarWidth: 'none', 
+                  msOverflowStyle: 'none',
+                  scrollBehavior: 'smooth',
+                  touchAction: 'pan-x'
+                }}
+                onMouseDown={handleMouseDown}
+                onMouseLeave={handleMouseLeave}
+                onMouseUp={handleMouseUp}
+                onMouseMove={handleMouseMove}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
               >
                 {safeJewelryCategories.map((category: Category, index: number) => (
-              <motion.div
-                key={category.slug}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="group cursor-pointer flex-shrink-0"
-              >
-                <Link href={`/collections?category=${category.slug}`}>
-                    <div className="relative w-24 h-24 xs:w-28 xs:h-28 sm:w-32 sm:h-32 md:w-40 md:h-40 lg:w-48 lg:h-48 xl:w-52 xl:h-52 overflow-hidden rounded-lg transition-all duration-300 group-hover:scale-105">
-                    {/* Background Image */}
-                    <Image
-                      src={category.image || '/images/placeholder-category.jpg'}
-                      alt={category.name}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 475px) 96px, (max-width: 640px) 112px, (max-width: 768px) 128px, (max-width: 1024px) 160px, (max-width: 1280px) 192px, 208px"
-                    />
-                    {/* Dark overlay for better text readability */}
-                    <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors" />
-                    <div className="absolute inset-0 flex items-center justify-center z-20">
-                      <h3 className="text-xs xs:text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl font-medium text-white text-center px-1 xs:px-2 sm:px-3 group-hover:text-accent transition-colors drop-shadow-lg">
-                        {category.name}
-                      </h3>
-                    </div>
-                  </div>
-                </Link>
-              </motion.div>
+                  <motion.div
+                    key={category.slug}
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: index * 0.1 }}
+                    viewport={{ once: true }}
+                    className="group relative overflow-hidden rounded-2xl xs:rounded-3xl bg-white shadow-lg hover:shadow-xl transition-all duration-500 cursor-pointer hover:scale-105 flex-shrink-0 w-40 xs:w-44 sm:w-48 md:w-52 lg:w-60 xl:w-80"
+                  >
+                    <Link href={`/collections?category=${category.slug}`} className="block">
+                      <div className="relative h-40 xs:h-44 sm:h-48 md:h-52 lg:h-60 xl:h-80">
+                        {/* Background Image */}
+                        <Image
+                          src={imageMap[category.image || ''] || category.image || '/images/placeholder-category.jpg'}
+                          alt={category.name}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 475px) 160px, (max-width: 640px) 176px, (max-width: 768px) 192px, (max-width: 1024px) 208px, (max-width: 1280px) 240px, 320px"
+                        />
+                        {/* Light overlay for better text readability */}
+                        <div className="absolute inset-0 bg-black/20" />
+                        
+                        {/* Content */}
+                        <div className="relative z-10 h-full flex flex-col justify-center items-center text-white p-2 xs:p-3 sm:p-4 md:p-4 lg:p-5 xl:p-6">
+                          <motion.h3 
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.6, delay: 0.3 }}
+                            viewport={{ once: true }}
+                            className="text-sm xs:text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl font-script mb-1 xs:mb-1 sm:mb-2 group-hover:scale-110 transition-transform duration-300 text-center leading-tight"
+                          >
+                            {category.name}
+                          </motion.h3>
+                          <motion.p 
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.6, delay: 0.4 }}
+                            viewport={{ once: true }}
+                            className="text-white/90 text-xs xs:text-xs sm:text-sm md:text-sm lg:text-sm xl:text-base font-light text-center"
+                          >
+                            Explore {category.name.toLowerCase()}
+                          </motion.p>
+                        </div>
+                      </div>
+                    </Link>
+                  </motion.div>
                 ))}
               </div>
-            </>
+            </div>
           )}
         </div>
       </section>
@@ -498,7 +873,7 @@ export default function Home() {
             viewport={{ once: true }}
             className="text-center mb-6"
           >
-            <h2 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl font-script text-primary mb-2">WHY CHOOSE US</h2>
+            <h2 className="text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-script text-primary mb-2">WHY CHOOSE US</h2>
             <p className="text-dark-gray max-w-2xl mx-auto text-xs xs:text-sm sm:text-base">
               Discover what makes our jewelry special
             </p>
@@ -568,72 +943,131 @@ export default function Home() {
             </p>
           </motion.div>
           
-          {/* Collections Slider */}
-          <div 
-            id="collections-slider"
-            className="flex gap-3 sm:gap-4 md:gap-6 overflow-x-auto overflow-y-hidden scrollbar-hide pb-2 cursor-grab active:cursor-grabbing"
-                style={{ 
-              scrollbarWidth: 'none', 
-              msOverflowStyle: 'none',
-              scrollBehavior: 'smooth',
-              touchAction: 'pan-x'
-            }}
-            onMouseDown={handleMouseDown}
-            onMouseLeave={handleMouseLeave}
-            onMouseUp={handleMouseUp}
-            onMouseMove={handleMouseMove}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-          >
-            {safeJewelryCategories.map((category: Category, index: number) => (
-                        <motion.div
-                          key={category.slug}
-                          initial={{ opacity: 0, y: 30 }}
-                          whileInView={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.6, delay: index * 0.1 }}
-                          viewport={{ once: true }}
-                className="group relative overflow-hidden rounded-2xl xs:rounded-3xl bg-white shadow-lg hover:shadow-xl transition-all duration-500 cursor-pointer hover:scale-105 flex-shrink-0 w-40 xs:w-44 sm:w-48 md:w-52 lg:w-60 xl:w-80"
-                        >
-                <Link href={`/collections?category=${category.slug}`} className="block">
-                            <div className="relative h-40 xs:h-44 sm:h-48 md:h-52 lg:h-60 xl:h-80">
-                              {/* Background Image */}
-                              <Image
-                                src={imageMap[category.image || ''] || category.image || '/images/placeholder-category.jpg'}
-                                alt={category.name}
-                                fill
-                                className="object-cover"
-                                sizes="(max-width: 475px) 160px, (max-width: 640px) 176px, (max-width: 768px) 192px, (max-width: 1024px) 208px, (max-width: 1280px) 240px, 320px"
-                              />
-                    {/* Light overlay for better text readability */}
-                    <div className="absolute inset-0 bg-black/20" />
-                            
-                            {/* Content */}
-                              <div className="relative z-10 h-full flex flex-col justify-center items-center text-white p-2 xs:p-3 sm:p-4 md:p-4 lg:p-5 xl:p-6">
-                                <motion.h3 
-                                  initial={{ opacity: 0, y: 20 }}
-                                  whileInView={{ opacity: 1, y: 0 }}
-                                  transition={{ duration: 0.6, delay: 0.3 }}
-                                  viewport={{ once: true }}
-                                  className="text-sm xs:text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl font-script mb-1 xs:mb-1 sm:mb-2 group-hover:scale-110 transition-transform duration-300 text-center leading-tight"
-                                >
-                                  {category.name}
-                                </motion.h3>
-                                <motion.p 
-                                  initial={{ opacity: 0, y: 20 }}
-                                  whileInView={{ opacity: 1, y: 0 }}
-                                  transition={{ duration: 0.6, delay: 0.4 }}
-                                  viewport={{ once: true }}
-                        className="text-white/90 text-xs xs:text-xs sm:text-sm md:text-sm lg:text-sm xl:text-base font-light text-center"
-                                >
-                                  Explore {category.name.toLowerCase()}
-                                </motion.p>
+          {/* Collections Carousel - Show Occasions with Counts */}
+          <div className="relative group">
+            {/* Navigation Arrows - Invisible by default, show on hover */}
+            <button
+              onClick={() => scrollOccasions('left')}
+              disabled={!canScrollOccasionsLeft}
+              className={`absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700 shadow-lg rounded-full p-2 sm:p-3 transition-all duration-200 opacity-0 group-hover:opacity-100 ${
+                !canScrollOccasionsLeft ? 'cursor-not-allowed' : 'hover:scale-110'
+              } flex items-center justify-center`}
+              aria-label="Previous occasions"
+            >
+              <svg className="w-5 h-5 sm:w-6 sm:h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            
+            <button
+              onClick={() => scrollOccasions('right')}
+              disabled={!canScrollOccasionsRight}
+              className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700 shadow-lg rounded-full p-2 sm:p-3 transition-all duration-200 opacity-0 group-hover:opacity-100 ${
+                !canScrollOccasionsRight ? 'cursor-not-allowed' : 'hover:scale-110'
+              } flex items-center justify-center`}
+              aria-label="Next occasions"
+            >
+              <svg className="w-5 h-5 sm:w-6 sm:h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+
+            {/* Occasions Slider Container */}
+            <div 
+              ref={setOccasionsSliderRef}
+              id="collections-slider"
+              className="flex gap-3 sm:gap-4 md:gap-6 overflow-x-auto overflow-y-hidden scrollbar-hide pb-2 cursor-grab active:cursor-grabbing px-8 sm:px-10 md:px-12 lg:px-16"
+              style={{ 
+                scrollbarWidth: 'none', 
+                msOverflowStyle: 'none',
+                scrollBehavior: 'smooth',
+                touchAction: 'pan-x'
+              }}
+              onMouseDown={handleMouseDown}
+              onMouseLeave={handleMouseLeave}
+              onMouseUp={handleMouseUp}
+              onMouseMove={handleMouseMove}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
+              {occasions
+                .filter(occ => occ.value !== 'all')
+                .map((occasion, index) => (
+                  <motion.div
+                    key={occasion.value}
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: index * 0.1 }}
+                    viewport={{ once: true }}
+                    className="group relative overflow-hidden rounded-2xl xs:rounded-3xl shadow-lg hover:shadow-xl transition-all duration-500 cursor-pointer hover:scale-105 flex-shrink-0 w-40 xs:w-44 sm:w-48 md:w-52 lg:w-60 xl:w-80"
+                  >
+                    <Link href={`/collections?occasion=${occasion.value}`} className="block">
+                      <div className="relative h-40 xs:h-44 sm:h-48 md:h-52 lg:h-60 xl:h-80">
+                        {/* Background Image or Gradient */}
+                        {occasion.image ? (
+                          <>
+                            <Image
+                              src={occasion.image}
+                              alt={occasion.name}
+                              fill
+                              className="object-cover"
+                              sizes="(max-width: 475px) 160px, (max-width: 640px) 176px, (max-width: 768px) 192px, (max-width: 1024px) 208px, (max-width: 1280px) 240px, 320px"
+                            />
+                            {/* Dark overlay for better text readability */}
+                            <div className="absolute inset-0 bg-black/30 group-hover:bg-black/40 transition-colors" />
+                          </>
+                        ) : (
+                          <div className="absolute inset-0 bg-gradient-to-br from-purple-100 via-pink-50 to-yellow-50">
+                            {/* Large initial letter - positioned at top */}
+                            <div className="absolute top-4 md:top-6 left-1/2 transform -translate-x-1/2 z-0">
+                              <span className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-script text-primary opacity-20 group-hover:opacity-30 transition-opacity">
+                                {occasion.name.charAt(0)}
+                              </span>
                             </div>
                           </div>
-                        </Link>
-                      </motion.div>
-                      ))}
-                    </div>
+                        )}
+                        
+                        {/* Content overlay - centered */}
+                        <div className="relative z-10 h-full flex flex-col items-center justify-center text-center p-2 xs:p-3 sm:p-4 md:p-4 lg:p-5 xl:p-6">
+                          <motion.h3 
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.6, delay: 0.3 }}
+                            viewport={{ once: true }}
+                            className={`text-sm xs:text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl font-script mb-1 xs:mb-1 sm:mb-2 group-hover:scale-110 transition-transform duration-300 text-center leading-tight ${
+                              occasion.image ? 'text-white' : 'text-primary'
+                            }`}
+                          >
+                            {occasion.name}
+                          </motion.h3>
+                          <motion.p 
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.6, delay: 0.4 }}
+                            viewport={{ once: true }}
+                            className={`text-xs xs:text-xs sm:text-sm md:text-sm lg:text-sm xl:text-base font-medium text-center ${
+                              occasion.image ? 'text-white/90' : 'text-gray-600'
+                            }`}
+                          >
+                            {occasionCounts[occasion.value] !== undefined 
+                              ? `(${occasionCounts[occasion.value]} items)`
+                              : 'Loading...'}
+                          </motion.p>
+                        </div>
+                        
+                        {/* Hover overlay */}
+                        <div className={`absolute inset-0 transition-all duration-300 ${
+                          occasion.image 
+                            ? 'bg-primary/0 group-hover:bg-primary/10' 
+                            : 'bg-primary/0 group-hover:bg-primary/5'
+                        }`} />
+                      </div>
+                    </Link>
+                  </motion.div>
+                ))}
+            </div>
+          </div>
         </div>
       </section>
 
@@ -978,20 +1412,42 @@ export default function Home() {
           <p className="max-w-lg xs:max-w-xl mx-auto mb-6 xs:mb-8 text-sm xs:text-base">
             Subscribe to receive updates on new collections, exclusive offers, and jewelry care tips.
           </p>
-          <form className="max-w-xs xs:max-w-sm sm:max-w-md mx-auto flex flex-col sm:flex-row gap-2 xs:gap-3 sm:gap-0">
+          <form 
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (!email.trim()) return;
+              
+              setIsSubscribing(true);
+              try {
+                // TODO: Implement newsletter subscription API call
+                await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call
+                alert('Thank you for subscribing!');
+                setEmail('');
+              } catch (error) {
+                alert('Something went wrong. Please try again.');
+              } finally {
+                setIsSubscribing(false);
+              }
+            }}
+            className="max-w-xs xs:max-w-sm sm:max-w-md mx-auto flex flex-col sm:flex-row gap-2 xs:gap-3 sm:gap-0"
+          >
             <input
               type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="Your email address"
-              className="px-3 xs:px-4 py-2 xs:py-3 w-full sm:w-2/3 rounded-l xs:rounded-l text-dark-gray focus:outline-none focus:ring-2 focus:ring-accent text-sm xs:text-base"
+              className="px-3 xs:px-4 py-2 xs:py-3 w-full sm:flex-1 rounded sm:rounded-l sm:rounded-r-none text-dark-gray focus:outline-none focus:ring-2 focus:ring-accent text-sm xs:text-base"
               required
+              disabled={isSubscribing}
               suppressHydrationWarning
             />
             <button
               type="submit"
-              className="bg-amber-400 hover:bg-amber-500 text-white px-4 xs:px-6 py-2 xs:py-3 rounded-r xs:rounded-r font-medium transition-colors sm:w-1/3 hover:scale-105 transform duration-200 text-sm xs:text-base"
+              disabled={isSubscribing}
+              className="bg-amber-400 hover:bg-amber-500 disabled:bg-amber-300 disabled:cursor-not-allowed text-white px-4 xs:px-6 py-2 xs:py-3 rounded sm:rounded-r sm:rounded-l-none font-medium transition-colors sm:w-auto hover:scale-105 transform duration-200 text-sm xs:text-base whitespace-nowrap"
               suppressHydrationWarning
             >
-              Subscribe
+              {isSubscribing ? 'Subscribing...' : 'Subscribe'}
             </button>
           </form>
           </motion.div>

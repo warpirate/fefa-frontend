@@ -55,6 +55,8 @@ const mobileNavIcons = [
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState('');
@@ -72,16 +74,28 @@ export default function Header() {
 
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 10) {
-        setIsScrolled(true);
-      } else {
+      const currentScrollY = window.scrollY;
+      
+      // Show header at top
+      if (currentScrollY < 10) {
+        setIsVisible(true);
         setIsScrolled(false);
+      } else {
+        setIsScrolled(true);
+        // Hide when scrolling down, show when scrolling up
+        if (currentScrollY > lastScrollY && currentScrollY > 100) {
+          setIsVisible(false);
+        } else if (currentScrollY < lastScrollY) {
+          setIsVisible(true);
+        }
       }
+      
+      setLastScrollY(currentScrollY);
     };
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [lastScrollY]);
 
   // Load data for suggestions
   useEffect(() => {
@@ -153,19 +167,24 @@ export default function Header() {
 
   return (
       <header 
-        className={`fixed w-full z-50 transition-all duration-300 border-b ${
+        className={`fixed top-0 w-full z-50 transition-all duration-300 border-b ${
+          isVisible 
+            ? 'translate-y-0' 
+            : '-translate-y-full'
+        } ${
           isScrolled 
-            ? 'bg-white dark:bg-[#1F2937] shadow-soft py-1 sm:py-2 border-gray-200 dark:border-gray-700' 
-            : 'bg-white dark:bg-[#1F2937] py-2 sm:py-4 border-gray-200 dark:border-gray-700'
+            ? 'bg-[#470031] shadow-lg py-2 sm:py-3 border-[#470031]' 
+            : 'bg-[#470031] py-3 sm:py-4 border-[#470031]'
         }`}
+        style={{ backgroundColor: '#470031' }}
       >
-      <div className="container mx-auto px-2 sm:px-4">
-        <div className="flex items-center justify-between">
+      <div className="container mx-auto px-3 sm:px-4 lg:px-6">
+        <div className="flex items-center justify-between gap-4">
           {/* Mobile search button */}
-          <div className="lg:hidden">
+          <div className="lg:hidden flex-shrink-0">
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="p-2 text-primary dark:text-[#E6C547] focus:outline-none"
+              className="p-2 text-[#DBC078] focus:outline-none"
               suppressHydrationWarning
             >
               <FiSearch className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />
@@ -173,30 +192,35 @@ export default function Header() {
           </div>
 
           {/* Logo */}
-          <div className="flex-shrink-0">
-            <Link href="/" className="flex items-center">
+          <div className="flex-shrink-0 flex items-center">
+            <Link href="/" className="flex items-center h-full">
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
+                className="relative h-full flex items-center"
               >
-                <div className="flex flex-col items-center">
-                  <h1 className="text-xl sm:text-2xl md:text-3xl font-script text-accent dark:text-[#E6C547]">fefa</h1>
-                  <p className="text-xs sm:text-xs md:text-xs tracking-wider text-primary dark:text-[#E6C547]">A CELEBRATION OF FEMININITY</p>
-                </div>
+                <Image
+                  src="/logo.jpg"
+                  alt="FEFA Logo"
+                  width={200}
+                  height={100}
+                  className="h-full max-h-12 sm:max-h-16 md:max-h-20 lg:max-h-24 w-auto object-contain"
+                  priority
+                />
               </motion.div>
             </Link>
           </div>
 
           {/* Desktop Navigation and Search */}
-          <div className="hidden lg:flex items-center space-x-8 xl:space-x-12">
+          <div className="hidden lg:flex items-center flex-1 justify-end gap-6 xl:gap-8">
             {/* Navigation Links */}
-            <nav className="flex items-center space-x-8 xl:space-x-12">
+            <nav className="flex items-center gap-6 xl:gap-8">
               {navigation.map((item) => (
                 <div key={item.name} className="relative group">
                   <Link
                     href={item.href}
-                    className="text-xs xl:text-sm font-medium uppercase tracking-wide transition-colors hover:text-accent dark:hover:text-[#E6C547] text-primary dark:text-[#E6C547]"
+                    className="text-xs xl:text-sm font-medium uppercase tracking-wide transition-colors hover:text-[#cfb570] text-[#DBC078]"
                     onMouseEnter={() => item.hasDropdown && handleDropdownToggle(item.name)}
                   >
                     {item.isIcon ? (
@@ -213,7 +237,7 @@ export default function Header() {
                         }}
                         className="p-2"
                       >
-                        <FiGift className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />
+                         <FiGift className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-[#DBC078]" />
                       </motion.div>
                     ) : (
                       item.name
@@ -266,21 +290,21 @@ export default function Header() {
             </nav>
 
             {/* Search and Right icons */}
-            <div className="flex items-center space-x-4 xl:space-x-6">
+            <div className="flex items-center gap-4 xl:gap-6">
             {/* Search Bar */}
             <div className="hidden md:flex items-center relative">
-              <form onSubmit={handleSearch} className="relative w-40 xl:w-48">
-                <FiSearch className="w-3 h-3 sm:w-4 sm:h-4 text-primary absolute left-3 top-1/2 transform -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="Search"
-                  value={searchInput}
-                  onChange={handleSearchInputChange}
-                  onFocus={handleSearchFocus}
-                  onBlur={handleSearchBlur}
-                  className="pl-10 pr-4 py-2 text-sm border-b border-primary dark:border-[#E6C547] focus:outline-none focus:border-accent dark:focus:border-[#E6C547] bg-transparent text-primary dark:text-[#E6C547] placeholder-gray-400 dark:placeholder-gray-500 w-full"
-                  suppressHydrationWarning
-                />
+              <form onSubmit={handleSearch} className="relative w-40 xl:w-52">
+                 <FiSearch className="w-3 h-3 sm:w-4 sm:h-4 text-[#DBC078] absolute left-3 top-1/2 transform -translate-y-1/2" />
+                 <input
+                   type="text"
+                   placeholder="Search"
+                   value={searchInput}
+                   onChange={handleSearchInputChange}
+                   onFocus={handleSearchFocus}
+                   onBlur={handleSearchBlur}
+                   className="pl-10 pr-4 py-2 text-sm border-b border-[#DBC078] focus:outline-none focus:border-[#cfb570] bg-transparent text-[#DBC078] placeholder-[#dcc996] w-full"
+                   suppressHydrationWarning
+                 />
               </form>
               
               <SearchSuggestions
@@ -300,47 +324,47 @@ export default function Header() {
             </div>
             
             {/* User Icons */}
-          <div className="flex items-center space-x-2 xl:space-x-4">
-            <Link href="/wishlist" className="p-2 text-primary dark:text-[#E6C547] hover:text-accent dark:hover:text-[#E6C547]/80 transition-colors relative">
-              <FiHeart className="w-4 h-4 sm:w-5 sm:h-5" />
-              {wishlistCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-accent text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-                  {wishlistCount > 99 ? '99+' : wishlistCount}
-                </span>
-              )}
-            </Link>
-            <Link href="/cart" className="p-2 text-primary dark:text-[#E6C547] hover:text-accent dark:hover:text-[#E6C547]/80 transition-colors relative">
-              <FiShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
-              {totalQuantity > 0 && (
-                <span className="absolute -top-1 -right-1 bg-accent text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-                  {totalQuantity > 99 ? '99+' : totalQuantity}
-                </span>
-              )}
-            </Link>
+          <div className="flex items-center gap-3 xl:gap-4">
+             <Link href="/wishlist" className="p-2 text-[#DBC078] hover:text-[#cfb570] transition-colors relative">
+               <FiHeart className="w-4 h-4 sm:w-5 sm:h-5" />
+               {wishlistCount > 0 && (
+                 <span className="absolute -top-1 -right-1 bg-[#cfb570] text-[#470031] text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                   {wishlistCount > 99 ? '99+' : wishlistCount}
+                 </span>
+               )}
+             </Link>
+             <Link href="/cart" className="p-2 text-[#DBC078] hover:text-[#cfb570] transition-colors relative">
+               <FiShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
+               {totalQuantity > 0 && (
+                 <span className="absolute -top-1 -right-1 bg-[#cfb570] text-[#470031] text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                   {totalQuantity > 99 ? '99+' : totalQuantity}
+                 </span>
+               )}
+             </Link>
             </div>
             
             {/* Auth Section */}
             <div className="hidden md:flex items-center">
-              {isLoading ? (
-                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-              ) : isAuthenticated ? (
-                <UserDropdown />
-              ) : (
-                <div className="flex items-center space-x-2">
-                  <Link 
-                    href="/auth/login" 
-                    className="px-4 py-2 text-sm font-medium text-primary dark:text-[#E6C547] hover:text-accent dark:hover:text-[#E6C547]/80 transition-colors"
-                  >
-                    Sign In
-                  </Link>
-                  <Link 
-                    href="/auth/register" 
-                    className="px-4 py-2 text-sm font-medium bg-primary dark:bg-[#6B1A7A] text-white rounded-lg hover:bg-primary/90 dark:hover:bg-[#6B1A7A]/90 transition-colors"
-                  >
-                    Sign Up
-                  </Link>
-                </div>
-              )}
+               {isLoading ? (
+                 <div className="w-8 h-8 border-2 border-[#DBC078] border-t-transparent rounded-full animate-spin"></div>
+               ) : isAuthenticated ? (
+                 <UserDropdown />
+               ) : (
+                 <div className="flex items-center gap-3">
+                   <Link 
+                     href="/auth/login" 
+                     className="px-4 py-2 text-sm font-medium text-[#DBC078] hover:text-[#cfb570] transition-colors whitespace-nowrap"
+                   >
+                     Sign In
+                   </Link>
+                   <Link 
+                     href="/auth/register" 
+                     className="px-4 py-2 text-sm font-medium bg-[#DBC078] text-[#470031] rounded-lg hover:bg-[#cfb570] transition-colors whitespace-nowrap"
+                   >
+                     Sign Up
+                   </Link>
+                 </div>
+               )}
             </div>
             </div>
           </div>
@@ -604,21 +628,21 @@ export default function Header() {
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
-          className="lg:hidden fixed top-12 sm:top-16 left-0 right-0 bg-white dark:bg-[#1F2937] border-b border-gray-200 dark:border-gray-700 z-30 px-2 sm:px-4 py-2 sm:py-3"
+           className="lg:hidden fixed top-12 sm:top-16 left-0 right-0 bg-[#470031] border-b border-[#470031] z-30 px-2 sm:px-4 py-2 sm:py-3"
         >
             <div className="flex items-center relative">
               <form onSubmit={handleSearch} className="relative w-full">
-                <FiSearch className="w-3 h-3 sm:w-4 sm:h-4 text-primary absolute left-3 top-1/2 transform -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="Search"
-                  value={searchInput}
-                  onChange={handleSearchInputChange}
-                  onFocus={handleSearchFocus}
-                  onBlur={handleSearchBlur}
-                  className="w-full pl-10 pr-4 py-2 text-sm border-b border-primary focus:outline-none focus:border-accent bg-transparent text-primary placeholder-gray-400"
-                  suppressHydrationWarning
-                />
+                 <FiSearch className="w-3 h-3 sm:w-4 sm:h-4 text-[#DBC078] absolute left-3 top-1/2 transform -translate-y-1/2" />
+                 <input
+                   type="text"
+                   placeholder="Search"
+                   value={searchInput}
+                   onChange={handleSearchInputChange}
+                   onFocus={handleSearchFocus}
+                   onBlur={handleSearchBlur}
+                   className="w-full pl-10 pr-4 py-2 text-sm border-b border-[#DBC078] focus:outline-none focus:border-[#cfb570] bg-transparent text-[#DBC078] placeholder-[#dcc996]"
+                   suppressHydrationWarning
+                 />
               </form>
               
               <SearchSuggestions
