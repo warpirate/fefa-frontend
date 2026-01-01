@@ -417,12 +417,15 @@ function CollectionsContent() {
     }
   }, [searchParams, clearSearch, isSearchActive, searchTerm, selectedCategories, selectedOccasion]);
   
-  // Load products when any filter changes (only if occasion is selected or search is active)
+  // Load products when any filter changes (if category is selected, occasion is selected, or search is active)
   useEffect(() => {
-    if (categories.length > 0 && (selectedOccasion || searchTerm)) {
+    const hasCategorySelected = selectedCategories.length > 0 && !selectedCategories.includes('all');
+    const shouldLoadProducts = hasCategorySelected || selectedOccasion || searchTerm;
+    
+    if (categories.length > 0 && shouldLoadProducts) {
       loadFilteredProducts();
-    } else if (categories.length > 0 && !selectedOccasion && !searchTerm) {
-      // Clear products when no occasion is selected and no search
+    } else if (categories.length > 0 && !shouldLoadProducts) {
+      // Clear products when no filters are selected
       setProducts([]);
       setPagination({
         currentPage: 1,
@@ -432,7 +435,7 @@ function CollectionsContent() {
         hasPrevPage: false
       });
     }
-  }, [loadFilteredProducts, categories.length, selectedOccasion, searchTerm]);
+  }, [loadFilteredProducts, categories.length, selectedCategories, selectedOccasion, searchTerm]);
   
   // Handle window width check for hydration safety
   useEffect(() => {
@@ -586,8 +589,8 @@ function CollectionsContent() {
         </motion.div>
       </section>
 
-      {/* Occasion Selection View - Show when no occasion selected and no search (and not loading with initial occasion) */}
-      {!selectedOccasion && !searchTerm && !isLoading && (
+      {/* Occasion Selection View - Show when no category selected, no occasion selected, and no search */}
+      {!selectedOccasion && !searchTerm && !isLoading && selectedCategories.includes('all') && (
         <section className="py-12 md:py-16">
           <div className="container mx-auto px-4">
             {/* Featured Occasions Hero Section */}
@@ -667,23 +670,27 @@ function CollectionsContent() {
         </section>
       )}
 
-      {/* Products View - Show when occasion is selected or search is active */}
-      {(selectedOccasion || searchTerm) && (
+      {/* Products View - Show when category is selected, occasion is selected, or search is active */}
+      {((selectedCategories.length > 0 && !selectedCategories.includes('all')) || selectedOccasion || searchTerm) && (
         <section className="py-8 md:py-12">
-          {/* Back to Occasions Button */}
-          {selectedOccasion && !searchTerm && (
+          {/* Category/Occasion Header */}
+          {((selectedCategories.length > 0 && !selectedCategories.includes('all')) || selectedOccasion) && !searchTerm && (
             <div className="container mx-auto px-4 mb-6">
-              <button
-                onClick={() => handleOccasionCardClick('all')}
-                className="flex items-center gap-2 text-primary hover:text-accent transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                Back to Occasions
-              </button>
+              {selectedOccasion && (
+                <button
+                  onClick={() => handleOccasionCardClick('all')}
+                  className="flex items-center gap-2 text-primary hover:text-accent transition-colors mb-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Back to Occasions
+                </button>
+              )}
               <h2 className="text-2xl md:text-3xl font-script text-primary mt-4">
-                {occasions.find(occ => occ.value === selectedOccasion)?.name || 'Products'}
+                {selectedOccasion 
+                  ? occasions.find(occ => occ.value === selectedOccasion)?.name || 'Products'
+                  : categories.find(cat => cat.value === selectedCategories[0])?.name || 'Products'}
               </h2>
             </div>
           )}
@@ -691,7 +698,7 @@ function CollectionsContent() {
       )}
 
       {/* Filters and Products */}
-      <section className={`py-8 md:py-12 ${selectedOccasion || searchTerm ? '' : 'hidden'}`}>
+      <section className={`py-8 md:py-12 ${((selectedCategories.length > 0 && !selectedCategories.includes('all')) || selectedOccasion || searchTerm) ? '' : 'hidden'}`}>
         <div className="container mx-auto px-4">
           <div className="flex flex-col lg:flex-row gap-6">
       {/* Mobile Filter Toggle */}
