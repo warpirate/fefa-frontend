@@ -85,6 +85,35 @@ const API_CONFIG = {
   }
 };
 
+// Retry function with exponential backoff for rate limiting (429 errors)
+async function fetchWithRetry(url, maxRetries = 3, initialDelay = 1000) {
+  let lastError = null;
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(url);
+      
+      // If rate limited (429), retry with exponential backoff
+      if (response.status === 429 && attempt < maxRetries) {
+        const delay = initialDelay * Math.pow(2, attempt);
+        console.warn(`Rate limited (429). Retrying in ${delay}ms... (attempt ${attempt + 1}/${maxRetries + 1})`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+      
+      return response;
+    } catch (error) {
+      lastError = error;
+      if (attempt < maxRetries) {
+        const delay = initialDelay * Math.pow(2, attempt);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  
+  throw lastError || new Error('Failed to fetch after retries');
+}
+
 // Helper functions for API calls
 const API_HELPERS = {
   // Get full API URL
@@ -93,7 +122,7 @@ const API_HELPERS = {
   // Categories API
   getCategories: async () => {
     try {
-      const response = await fetch(API_HELPERS.getUrl(API_CONFIG.ENDPOINTS.CATEGORIES));
+      const response = await fetchWithRetry(API_HELPERS.getUrl(API_CONFIG.ENDPOINTS.CATEGORIES));
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -137,7 +166,7 @@ const API_HELPERS = {
       // regardless of date restrictions (startDate/endDate)
       // Add cache-busting parameter to ensure fresh data
       const cacheBuster = `?t=${Date.now()}`;
-      const response = await fetch(API_HELPERS.getUrl(API_CONFIG.ENDPOINTS.BANNERS + cacheBuster));
+      const response = await fetchWithRetry(API_HELPERS.getUrl(API_CONFIG.ENDPOINTS.BANNERS + cacheBuster));
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -151,7 +180,7 @@ const API_HELPERS = {
   // Products API
   getProducts: async () => {
     try {
-      const response = await fetch(API_HELPERS.getUrl(API_CONFIG.ENDPOINTS.PRODUCTS));
+      const response = await fetchWithRetry(API_HELPERS.getUrl(API_CONFIG.ENDPOINTS.PRODUCTS));
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -164,7 +193,7 @@ const API_HELPERS = {
   
   getFeaturedProducts: async (limit = 20) => {
     try {
-      const response = await fetch(API_HELPERS.getUrl(`${API_CONFIG.ENDPOINTS.PRODUCTS}?isFeatured=true&limit=${limit}`));
+      const response = await fetchWithRetry(API_HELPERS.getUrl(`${API_CONFIG.ENDPOINTS.PRODUCTS}?isFeatured=true&limit=${limit}`));
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }

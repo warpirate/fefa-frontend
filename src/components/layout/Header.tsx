@@ -104,9 +104,12 @@ export default function Header() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScrollY]);
 
-  // Load data for suggestions
+  // Load data for suggestions with delay to avoid rate limiting
   useEffect(() => {
     const loadSuggestionsData = async () => {
+      // Delay loading to avoid hitting API immediately on page load
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
       try {
         setIsLoadingSuggestions(true);
         const [productsData, categoriesData] = await Promise.all([

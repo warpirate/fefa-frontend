@@ -518,3 +518,72 @@
     );
   }
 }
+
+/* Product Image Carousel Styles */
+.product-image-carousel-container {
+  position: relative;
+}
+
+.product-carousel-nav-button {
+  transition: all 0.2s ease;
+}
+
+.product-carousel-nav-button:hover {
+  transform: scale(1.1);
+  background-color: white !important;
+}
+
+.product-carousel-nav-button:active {
+  transform: scale(0.95);
+}
+
+.product-carousel-indicator {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.product-carousel-indicator:hover {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Mobile carousel improvements */
+@media (max-width: 767px) {
+  .product-carousel-nav-button {
+    opacity: 1 !important;
+    background-color: rgba(255, 255, 255, 0.9) !important;
+  }
+  
+  .product-carousel-indicator {
+    width: 6px !important;
+    height: 6px !important;
+  }
+  
+  .product-carousel-indicator.active {
+    width: 24px !important;
+  }
+}
+
+/* Smooth image transitions */
+.product-carousel-image-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* Thumbnail carousel styles */
+.product-thumbnail-carousel {
+  scroll-behavior: smooth;
+}
+
+.product-thumbnail-item {
+  transition: all 0.2s ease;
+}
+
+.product-thumbnail-item:hover {
+  transform: scale(1.05);
+}
+
+.product-thumbnail-item.active {
+  transform: scale(1.05);
+  opacity: 1 !important;
+}

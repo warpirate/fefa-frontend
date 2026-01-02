@@ -5,7 +5,6 @@ import {
   loadTrendingData, 
   loadTestimonialsData,
   loadCollectionsCategoriesData,
-  loadCollectionsOccasionsData,
   loadCollectionsProductsData
 } from '../utils/dataLoader';
 import { API_HELPERS } from '../config/api';
@@ -77,11 +76,23 @@ class DataService {
 
   async getCollectionsOccasions() {
     try {
-      const localData = await loadCollectionsOccasionsData();
-      return { success: true, data: localData };
+      const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${baseURL}/occasions?sortBy=sortOrder&sortOrder=asc`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          return { success: true, data: data.data || [] };
+        } else {
+          return { success: false, error: data.message || 'Failed to load occasions' };
+        }
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        return { success: false, error: errorData.message || `HTTP ${response.status}` };
+      }
     } catch (error) {
       console.error('Failed to load collections occasions data:', error);
-      return { success: false, error: 'Failed to load collections occasions data from local files' };
+      return { success: false, error: error.message || 'Failed to load collections occasions data' };
     }
   }
 
@@ -182,32 +193,40 @@ class DataService {
     }
   }
 
-  // Get all data at once
+  // Get all data at once with sequential loading to prevent rate limiting
   async getAllData() {
     try {
-      const [
-        carousel,
-        categories,
-        collectionsCategories,
-        collectionsOccasions,
-        collectionsProducts,
-        features,
-        products,
-        styles,
-        testimonials,
-        trending
-      ] = await Promise.all([
-        this.getCarousel(),
-        this.getCategories(),
-        this.getCollectionsCategories(),
-        this.getCollectionsOccasions(),
-        this.getCollectionsProducts(),
+      // Helper to add delay between requests
+      const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+      
+      // Load critical API data sequentially with delays to prevent rate limiting
+      const carousel = await this.getCarousel();
+      await delay(300);
+      
+      const categories = await this.getCategories();
+      await delay(300);
+      
+      // Load collections data (may use API or fallback)
+      const collectionsCategories = await this.getCollectionsCategories();
+      await delay(200);
+      
+      const collectionsOccasions = await this.getCollectionsOccasions();
+      await delay(200);
+      
+      // Load products (may use API or fallback) - this is a heavy request
+      const collectionsProducts = await this.getCollectionsProducts();
+      await delay(400);
+      
+      // Load remaining data in parallel (these use local fallback, less critical)
+      const [features, styles, testimonials, trending] = await Promise.all([
         this.getFeatures(),
-        this.getProducts(),
         this.getStyles(),
         this.getTestimonials(),
         this.getTrending()
       ]);
+      
+      // Products can be loaded separately as it's heavy
+      const products = await this.getProducts();
 
       return {
         success: true,

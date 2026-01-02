@@ -3,7 +3,6 @@
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { FiZap, FiAward, FiHeart, FiStar } from 'react-icons/fi';
 import MainLayout from '@/components/layout/MainLayout';
 import Button from '@/components/ui/Button';
 import ProductCard from '@/components/product/ProductCard';
@@ -15,17 +14,14 @@ import { useDataContext } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import dataService from '@/services/dataService';
 import { 
-  loadCollectionsOccasionsData,
   loadProductsWithFilters
 } from '@/utils/dataLoader';
 import { 
-  CarouselItem, 
   Category, 
   Feature, 
   Product, 
   TrendingLook, 
-  Testimonial,
-  CollectionOccasion
+  Testimonial
 } from '@/types/data';
 
 // Import category images for fallback
@@ -59,11 +55,10 @@ const imageMap: { [key: string]: any } = {
 export default function Home() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading, user, isAdmin } = useAuth();
-  const [currentSlide, setCurrentSlide] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
-  const [retrying, setRetrying] = useState({ categories: false, carousel: false });
+  const [retrying, setRetrying] = useState({ categories: false });
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [loadingFeaturedProducts, setLoadingFeaturedProducts] = useState(true);
   const [featuredProductsScroll, setFeaturedProductsScroll] = useState(0);
@@ -73,7 +68,12 @@ export default function Home() {
   const [categoriesSliderRef, setCategoriesSliderRef] = useState<HTMLDivElement | null>(null);
   const [canScrollCategoriesLeft, setCanScrollCategoriesLeft] = useState(false);
   const [canScrollCategoriesRight, setCanScrollCategoriesRight] = useState(true);
-  const [occasions, setOccasions] = useState<CollectionOccasion[]>([]);
+  const [collections, setCollections] = useState<any[]>([]);
+  const [collectionCounts, setCollectionCounts] = useState<Record<string, number>>({});
+  const [collectionsSliderRef, setCollectionsSliderRef] = useState<HTMLDivElement | null>(null);
+  const [canScrollCollectionsLeft, setCanScrollCollectionsLeft] = useState(false);
+  const [canScrollCollectionsRight, setCanScrollCollectionsRight] = useState(true);
+  const [occasions, setOccasions] = useState<any[]>([]);
   const [occasionCounts, setOccasionCounts] = useState<Record<string, number>>({});
   const [occasionsSliderRef, setOccasionsSliderRef] = useState<HTMLDivElement | null>(null);
   const [canScrollOccasionsLeft, setCanScrollOccasionsLeft] = useState(false);
@@ -83,15 +83,13 @@ export default function Home() {
   
   // Get data from context
   const { 
-    carousel,
     categories,
     features,
     products,
     trending,
     testimonials,
     fieldErrors,
-    loadCategories,
-    loadCarousel
+    loadCategories
   } = useDataContext();
 
   // Helper function to safely extract array from data
@@ -104,27 +102,18 @@ export default function Home() {
   };
 
   // Ensure arrays are not null and are actually arrays
-  const safeCarouselItems = getSafeArray(carousel);
   const safeJewelryCategories = getSafeArray(categories);
   const safeFeatures = getSafeArray(features);
   const safeProducts = getSafeArray(products);
   const safeTrendingLooks = getSafeArray(trending);
   const safeTestimonials = getSafeArray(testimonials);
 
-  // Auto-advance carousel
-  useEffect(() => {
-    if (safeCarouselItems.length === 0) return;
-    
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % safeCarouselItems.length);
-    }, 5000);
-
-    return () => clearInterval(timer);
-  }, [safeCarouselItems.length]);
-
-  // Fetch featured products
+  // Fetch featured products with delay to avoid rate limiting
   useEffect(() => {
     const loadFeaturedProducts = async () => {
+      // Small delay to stagger API requests
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       try {
         setLoadingFeaturedProducts(true);
         const result = await dataService.getFeaturedProducts(20);
@@ -145,50 +134,154 @@ export default function Home() {
     loadFeaturedProducts();
   }, []);
 
-  // Load occasions data
+  // Load collections data
+  useEffect(() => {
+    const loadCollections = async () => {
+      try {
+        const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+        const response = await fetch(`${baseURL}/collections?sortBy=sortOrder&sortOrder=asc`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            setCollections(data.data || []);
+          } else {
+            setCollections([]);
+          }
+        } else {
+          setCollections([]);
+        }
+      } catch (error) {
+        console.error('Failed to load collections:', error);
+        setCollections([]);
+      }
+    };
+
+    loadCollections();
+  }, []);
+
+  // Load collection product counts (if needed in future)
+  useEffect(() => {
+    // Collections don't have direct product counts yet
+    // This can be implemented later if products are linked to collections
+    setCollectionCounts({});
+  }, [collections]);
+
+  // Load occasions data from API (database only, no JSON fallback) with retry logic
   useEffect(() => {
     const loadOccasions = async () => {
-      try {
-        const occasionsData = await loadCollectionsOccasionsData();
-        setOccasions(occasionsData);
-      } catch (error) {
-        console.error('Failed to load occasions:', error);
-        setOccasions([]);
+      // Delay to avoid hitting API immediately on page load
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+      const url = `${baseURL}/occasions?sortBy=sortOrder&sortOrder=asc`;
+      
+      // Retry logic with exponential backoff
+      let lastError: Error | null = null;
+      const maxRetries = 3;
+      const initialDelay = 1000;
+      
+      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+          const response = await fetch(url);
+          
+          // If rate limited (429), retry with exponential backoff
+          if (response.status === 429 && attempt < maxRetries) {
+            const delay = initialDelay * Math.pow(2, attempt);
+            console.warn(`Rate limited (429) loading occasions. Retrying in ${delay}ms... (attempt ${attempt + 1}/${maxRetries + 1})`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            continue;
+          }
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.data) {
+              // Filter out any inactive occasions and ensure we have valid data
+              const activeOccasions = data.data.filter((occ: any) => occ.isActive !== false);
+              setOccasions(activeOccasions);
+              return; // Success, exit function
+            } else {
+              console.error('Failed to load occasions:', data.message || 'Unknown error');
+              setOccasions([]);
+              return;
+            }
+          } else {
+            // If not 429 and not ok, try to get error message
+            const errorData = await response.json().catch(() => ({}));
+            if (response.status === 429 && attempt < maxRetries) {
+              const delay = initialDelay * Math.pow(2, attempt);
+              await new Promise(resolve => setTimeout(resolve, delay));
+              continue;
+            }
+            console.error('Failed to load occasions:', errorData.message || `HTTP ${response.status}`);
+            setOccasions([]);
+            return;
+          }
+        } catch (error) {
+          lastError = error as Error;
+          if (attempt < maxRetries) {
+            const delay = initialDelay * Math.pow(2, attempt);
+            await new Promise(resolve => setTimeout(resolve, delay));
+          }
+        }
       }
+      
+      // If we get here, all retries failed
+      if (lastError) {
+        console.error('Failed to load occasions after retries:', lastError);
+      }
+      setOccasions([]);
     };
 
     loadOccasions();
   }, []);
 
-  // Load occasion product counts
+  // Load occasion product counts with throttling to prevent rate limiting
   useEffect(() => {
     const loadOccasionCounts = async () => {
       if (occasions.length === 0) return;
       
+      // Delay loading to avoid hitting API immediately on page load
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
       try {
         const counts: Record<string, number> = {};
-        const occasionsList = occasions.filter(occ => occ.value !== 'all');
+        const occasionsList = occasions.filter((occ: any) => occ.value && occ.value !== 'all');
         
-        // Get counts from API (always use API for real-time data)
-        await Promise.all(
-          occasionsList.map(async (occasion) => {
-            try {
-              const result = await loadProductsWithFilters({
-                occasion: occasion.value,
-                limit: 1,
-                page: 1
-              });
-              // Use the totalProducts from pagination which reflects the actual count
-              counts[occasion.value] = result.pagination?.totalProducts || 0;
-            } catch (error) {
-              console.error(`Error loading count for ${occasion.value}:`, error);
-              // If API fails, set to 0 (don't use JSON fallback for counts to ensure real-time data)
-              counts[occasion.value] = 0;
-            }
-          })
-        );
+        // Process occasions in batches of 3 with delays to prevent rate limiting
+        const batchSize = 3;
+        const delayBetweenBatches = 500; // 500ms delay between batches
         
-        setOccasionCounts(counts);
+        for (let i = 0; i < occasionsList.length; i += batchSize) {
+          const batch = occasionsList.slice(i, i + batchSize);
+          
+          // Process batch in parallel
+          await Promise.all(
+            batch.map(async (occasion: any) => {
+              try {
+                const result = await loadProductsWithFilters({
+                  occasion: occasion.value,
+                  limit: 1,
+                  page: 1
+                });
+                // Use the totalProducts from pagination which reflects the actual count
+                counts[occasion.value] = result.pagination?.totalProducts || 0;
+              } catch (error: any) {
+                console.error(`Error loading count for ${occasion.value}:`, error);
+                // If API fails (including 429), set to 0
+                counts[occasion.value] = 0;
+              }
+            })
+          );
+          
+          // Update counts incrementally as we load them
+          setOccasionCounts({ ...counts });
+          
+          // Add delay between batches (except for the last batch)
+          if (i + batchSize < occasionsList.length) {
+            await new Promise(resolve => setTimeout(resolve, delayBetweenBatches));
+          }
+        }
       } catch (error) {
         console.error('Error loading occasion counts:', error);
       }
@@ -254,11 +347,39 @@ export default function Home() {
     };
   }, [categoriesSliderRef]);
 
+  // Update scroll state for collections carousel
+  useEffect(() => {
+    if (!collectionsSliderRef) return;
+    
+    const updateScrollState = () => {
+      const scrollLeft = collectionsSliderRef.scrollLeft;
+      const maxScroll = collectionsSliderRef.scrollWidth - collectionsSliderRef.clientWidth;
+      
+      setCanScrollCollectionsLeft(scrollLeft > 10);
+      setCanScrollCollectionsRight(scrollLeft < maxScroll - 10);
+    };
+    
+    collectionsSliderRef.addEventListener('scroll', updateScrollState);
+    updateScrollState(); // Initial check
+    
+    // Also check on resize
+    const handleResize = () => {
+      updateScrollState();
+    };
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      collectionsSliderRef.removeEventListener('scroll', updateScrollState);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [collectionsSliderRef]);
+
   // Update scroll state for occasions carousel
   useEffect(() => {
     if (!occasionsSliderRef) return;
     
     const updateScrollState = () => {
+      if (!occasionsSliderRef) return;
       const scrollLeft = occasionsSliderRef.scrollLeft;
       const maxScroll = occasionsSliderRef.scrollWidth - occasionsSliderRef.clientWidth;
       
@@ -266,10 +387,10 @@ export default function Home() {
       setCanScrollOccasionsRight(scrollLeft < maxScroll - 10);
     };
     
+    updateScrollState();
     occasionsSliderRef.addEventListener('scroll', updateScrollState);
-    updateScrollState(); // Initial check
     
-    // Also check on resize
+    // Also update on resize
     const handleResize = () => {
       updateScrollState();
     };
@@ -451,6 +572,24 @@ export default function Home() {
     });
   };
 
+  // Collections slider navigation
+  const scrollCollections = (direction: 'left' | 'right') => {
+    if (!collectionsSliderRef) return;
+    
+    const cardWidth = 320; // Approximate card width including gap (same as categories)
+    const scrollAmount = cardWidth * 2; // Scroll 2 cards at a time
+    const maxScroll = collectionsSliderRef.scrollWidth - collectionsSliderRef.clientWidth;
+    
+    const newScroll = direction === 'left' 
+      ? Math.max(0, collectionsSliderRef.scrollLeft - scrollAmount)
+      : Math.min(maxScroll, collectionsSliderRef.scrollLeft + scrollAmount);
+    
+    collectionsSliderRef.scrollTo({
+      left: newScroll,
+      behavior: 'smooth'
+    });
+  };
+
   // Occasions slider navigation
   const scrollOccasions = (direction: 'left' | 'right') => {
     if (!occasionsSliderRef) return;
@@ -476,157 +615,29 @@ export default function Home() {
       {/* Brand Banner Section */}
       <section 
         id="brand-banner"
-        className="relative py-4 xs:py-5 sm:py-6 overflow-hidden"
+        className="relative py-12 xs:py-16 sm:py-20 md:py-24 overflow-hidden flex items-center justify-center min-h-[40vh]"
         style={{ 
           background: 'linear-gradient(135deg, #470031 0%, #470031 50%, #470031 100%)'
         }}
       >
-        {/* Decorative background elements */}
-        <div className="absolute inset-0 opacity-5">
-          <div className="absolute top-10 left-10 w-24 h-24 rounded-full blur-2xl" style={{ backgroundColor: '#cfb570' }}></div>
-          <div className="absolute bottom-10 right-10 w-32 h-32 rounded-full blur-2xl" style={{ backgroundColor: '#DBC078' }}></div>
-        </div>
-        
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="flex flex-col items-center justify-center text-center">
-            {/* Logo */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8, y: -20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-              className="mb-2 xs:mb-3"
-            >
-              <div className="relative w-16 h-16 xs:w-20 xs:h-20 sm:w-24 sm:h-24">
-                <Image
-                  src="/logo.jpg"
-                  alt="FEFA Logo"
-                  fill
-                  className="object-contain drop-shadow-lg"
-                  priority
-                  sizes="(max-width: 475px) 64px, (max-width: 640px) 80px, 96px"
-                />
-              </div>
-            </motion.div>
-
-            {/* Brand Name */}
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl font-script mb-1 xs:mb-2"
-              style={{ 
-                color: '#DBC078',
-                textShadow: '0 2px 8px rgba(219, 192, 120, 0.5), 0 4px 16px rgba(0, 0, 0, 0.3)'
-              }}
-            >
-              fefa
-            </motion.h1>
-
-            {/* Tagline */}
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="text-xs xs:text-sm sm:text-base mb-4 xs:mb-5 font-light tracking-wide"
-              style={{ 
-                color: '#dcc996',
-                textShadow: '0 1px 4px rgba(0, 0, 0, 0.4)'
-              }}
-            >
-              A CELEBRATION OF FEMININITY
-            </motion.p>
-
-            {/* Brand Values - Compact Grid */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              className="grid grid-cols-2 sm:grid-cols-4 gap-2 xs:gap-3 sm:gap-4 max-w-3xl w-full mb-4 xs:mb-5"
-            >
-              {[
-                { Icon: FiZap, title: "Handcrafted Excellence" },
-                { Icon: FiAward, title: "Premium Quality" },
-                { Icon: FiHeart, title: "Timeless Elegance" },
-                { Icon: FiStar, title: "Authentic Beauty" }
-              ].map((value, index) => (
-                <motion.div
-                  key={value.title}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.4 + index * 0.1 }}
-                  className="rounded-lg p-2 xs:p-3 border-2 transition-all duration-300 hover:scale-105"
-                  style={{ 
-                    borderColor: '#cfb570',
-                    backgroundColor: 'rgba(207, 181, 112, 0.15)',
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(219, 192, 120, 0.2)'
-                  }}
-                >
-                  <div className="flex justify-center mb-1 xs:mb-2">
-                    <value.Icon 
-                      className="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7" 
-                      style={{ 
-                        color: '#DBC078',
-                        filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3))'
-                      }} 
-                    />
-                  </div>
-                  <h3 
-                    className="font-semibold text-xs leading-tight text-center" 
-                    style={{ 
-                      color: '#DBC078',
-                      textShadow: '0 1px 3px rgba(0, 0, 0, 0.4)'
-                    }}
-                  >
-                    {value.title}
-                  </h3>
-                </motion.div>
-              ))}
-            </motion.div>
-
-            {/* Scroll Down Button */}
-            <motion.button
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.7 }}
-              onClick={() => {
-                const categoriesSection = document.getElementById('categories-section');
-                if (categoriesSection) {
-                  categoriesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-              }}
-              className="group flex flex-col items-center gap-1 hover:opacity-80 transition-opacity duration-300"
-              aria-label="Scroll to categories"
-            >
-              <span 
-                className="text-xs font-light tracking-wide" 
-                style={{ 
-                  color: '#dcc996',
-                  textShadow: '0 1px 3px rgba(0, 0, 0, 0.4)'
-                }}
-              >
-                Explore Collections
-              </span>
-              <motion.div
-                animate={{ y: [0, 8, 0] }}
-                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                className="w-5 h-8 rounded-full border-2 flex items-start justify-center p-1"
-                style={{ 
-                  borderColor: '#DBC078',
-                  boxShadow: '0 2px 8px rgba(219, 192, 120, 0.4)'
-                }}
-              >
-                <motion.div
-                  animate={{ y: [0, 10, 0] }}
-                  transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                  className="w-1.5 h-1.5 rounded-full"
-                  style={{ 
-                    backgroundColor: '#DBC078',
-                    boxShadow: '0 0 8px rgba(219, 192, 120, 0.6)'
-                  }}
-                />
-              </motion.div>
-            </motion.button>
-          </div>
+        <div className="container mx-auto px-4 relative z-10 flex items-center justify-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="flex items-center justify-center"
+          >
+            <div className="relative w-32 h-32 xs:w-40 xs:h-40 sm:w-48 sm:h-48 md:w-56 md:h-56 lg:w-64 lg:h-64">
+              <Image
+                src="/logo.jpg"
+                alt="FEFA Logo"
+                fill
+                className="object-contain drop-shadow-2xl"
+                priority
+                sizes="(max-width: 475px) 128px, (max-width: 640px) 160px, (max-width: 768px) 192px, (max-width: 1024px) 224px, 256px"
+              />
+            </div>
+          </motion.div>
         </div>
       </section>
 
@@ -745,116 +756,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Automated Carousel Section */}
-      <section className="relative h-[60vh] xs:h-[65vh] sm:h-[70vh] md:h-[80vh] lg:h-[85vh] xl:h-[95vh] overflow-hidden -mt-4">
-        <div className="relative w-full h-full">
-          {fieldErrors.carousel ? (
-            <div className="flex items-center justify-center h-full">
-              <ErrorDisplay 
-                field="Carousel" 
-                message={fieldErrors.carousel} 
-                isLoading={retrying.carousel}
-                onRetry={async () => {
-                  setRetrying(prev => ({ ...prev, carousel: true }));
-                  await loadCarousel();
-                  setRetrying(prev => ({ ...prev, carousel: false }));
-                }}
-              />
-            </div>
-          ) : (
-            <>
-              {safeCarouselItems.map((item: CarouselItem, index: number) => (
-                <motion.div
-                  key={item.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ 
-                    opacity: currentSlide === index ? 1 : 0,
-                    scale: currentSlide === index ? 1 : 1.1
-                  }}
-                  transition={{ duration: 0.8, ease: "easeInOut" }}
-                  className={`absolute inset-0 ${
-                    currentSlide === index ? 'z-10' : 'z-0'
-                  }`}
-                >
-                  {/* Background Image */}
-                  <Image
-                    src={imageMap[item.image || ''] || item.image || '/images/placeholder-banner.jpg'}
-                    alt={item.title}
-                    fill
-                    className="object-cover"
-                    priority={index === 0}
-                    sizes="100vw"
-                  />
-                  {/* Dark overlay for better text readability */}
-                  <div className="absolute inset-0 bg-black/40" />
-                  
-                  <div className="container mx-auto px-3 xs:px-4 sm:px-4 md:px-4 lg:px-4 h-full flex items-center relative z-10">
-                    <div className="max-w-xs xs:max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl w-full">
-                      <motion.h1 
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ 
-                          opacity: currentSlide === index ? 1 : 0,
-                          y: currentSlide === index ? 0 : 30
-                        }}
-                        transition={{ duration: 0.6, delay: 0.2 }}
-                        className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-6xl !font-cormorant text-amber-300 mb-2 xs:mb-3 sm:mb-4 leading-tight"
-                      >
-                        {item.title}
-                      </motion.h1>
-                      <motion.p 
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ 
-                          opacity: currentSlide === index ? 1 : 0,
-                          y: currentSlide === index ? 0 : 30
-                        }}
-                        transition={{ duration: 0.6, delay: 0.4 }}
-                        className="text-amber-100 text-sm xs:text-base sm:text-lg md:text-xl lg:text-xl xl:text-xl mb-4 xs:mb-6 sm:mb-6 md:mb-8 leading-relaxed"
-                      >
-                        {item.subtitle}
-                      </motion.p>
-                      <motion.div 
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ 
-                          opacity: currentSlide === index ? 1 : 0,
-                          y: currentSlide === index ? 0 : 30
-                        }}
-                        transition={{ duration: 0.6, delay: 0.6 }}
-                      >
-                        <Button 
-                          href={item.buttonLink || '#'} 
-                          variant="secondary" 
-                          size="sm"
-                          className="bg-amber-400 hover:bg-amber-500 text-white border-0 text-xs xs:text-sm sm:text-base px-3 xs:px-4 sm:px-6 py-2 xs:py-2 sm:py-3"
-                        >
-                          {item.buttonText || 'Learn More'}
-                        </Button>
-                      </motion.div>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-              
-              {/* Carousel Indicators */}
-              <div className="absolute bottom-3 xs:bottom-4 sm:bottom-5 md:bottom-6 left-1/2 transform -translate-x-1/2 flex space-x-1 xs:space-x-2 z-20">
-                {safeCarouselItems.map((_: any, index: number) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentSlide(index)}
-                    className={`w-2 h-2 xs:w-2.5 xs:h-2.5 sm:w-3 sm:h-3 rounded-full transition-all duration-300 ${
-                      currentSlide === index 
-                        ? 'bg-amber-300 scale-125' 
-                        : 'bg-amber-200/50 hover:bg-amber-200/70'
-                    }`}
-                    aria-label={`Go to slide ${index + 1}`}
-                    suppressHydrationWarning
-                  />
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-      </section>
-
       {/* Features Section */}
       <section className="pt-12 pb-8 bg-white dark:bg-[#0a0a0a] overflow-hidden transition-colors duration-300">
         <div className="container mx-auto px-4">
@@ -935,7 +836,155 @@ export default function Home() {
             </p>
           </motion.div>
           
-          {/* Collections Carousel - Show Occasions with Counts */}
+          {/* Collections Carousel */}
+          <div className="relative group">
+            {/* Navigation Arrows - Invisible by default, show on hover */}
+            <button
+              onClick={() => scrollCollections('left')}
+              disabled={!canScrollCollectionsLeft}
+              className={`absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700 shadow-lg rounded-full p-2 sm:p-3 transition-all duration-200 opacity-0 group-hover:opacity-100 ${
+                !canScrollCollectionsLeft ? 'cursor-not-allowed' : 'hover:scale-110'
+              } flex items-center justify-center`}
+              aria-label="Previous collections"
+            >
+              <svg className="w-5 h-5 sm:w-6 sm:h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            
+            <button
+              onClick={() => scrollCollections('right')}
+              disabled={!canScrollCollectionsRight}
+              className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700 shadow-lg rounded-full p-2 sm:p-3 transition-all duration-200 opacity-0 group-hover:opacity-100 ${
+                !canScrollCollectionsRight ? 'cursor-not-allowed' : 'hover:scale-110'
+              } flex items-center justify-center`}
+              aria-label="Next collections"
+            >
+              <svg className="w-5 h-5 sm:w-6 sm:h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+
+            {/* Collections Slider Container */}
+            <div 
+              ref={setCollectionsSliderRef}
+              id="collections-slider"
+              className="flex gap-3 sm:gap-4 md:gap-6 overflow-x-auto overflow-y-hidden scrollbar-hide pb-2 cursor-grab active:cursor-grabbing px-8 sm:px-10 md:px-12 lg:px-16"
+              style={{ 
+                scrollbarWidth: 'none', 
+                msOverflowStyle: 'none',
+                scrollBehavior: 'smooth',
+                touchAction: 'pan-x'
+              }}
+              onMouseDown={handleMouseDown}
+              onMouseLeave={handleMouseLeave}
+              onMouseUp={handleMouseUp}
+              onMouseMove={handleMouseMove}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
+              {collections.length > 0 ? (
+                collections.map((collection, index) => (
+                  <motion.div
+                    key={collection._id || collection.id}
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: index * 0.1 }}
+                    viewport={{ once: true }}
+                    className="group relative overflow-hidden rounded-2xl xs:rounded-3xl shadow-lg hover:shadow-xl transition-all duration-500 cursor-pointer hover:scale-105 flex-shrink-0 w-40 xs:w-44 sm:w-48 md:w-52 lg:w-60 xl:w-80"
+                  >
+                    <Link href={`/collections`} className="block">
+                      <div className="relative h-40 xs:h-44 sm:h-48 md:h-52 lg:h-60 xl:h-80">
+                        {/* Background Image or Gradient */}
+                        {collection.image ? (
+                          <>
+                            <Image
+                              src={collection.image}
+                              alt={collection.name}
+                              fill
+                              className="object-cover"
+                              sizes="(max-width: 475px) 160px, (max-width: 640px) 176px, (max-width: 768px) 192px, (max-width: 1024px) 208px, (max-width: 1280px) 240px, 320px"
+                            />
+                            {/* Dark overlay for better text readability */}
+                            <div className="absolute inset-0 bg-black/30 group-hover:bg-black/40 transition-colors" />
+                          </>
+                        ) : (
+                          <div className="absolute inset-0 bg-gradient-to-br from-purple-100 via-pink-50 to-yellow-50">
+                            {/* Large initial letter - positioned at top */}
+                            <div className="absolute top-4 md:top-6 left-1/2 transform -translate-x-1/2 z-0">
+                              <span className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-script text-primary opacity-20 group-hover:opacity-30 transition-opacity">
+                                {collection.name.charAt(0)}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Content overlay - centered */}
+                        <div className="relative z-10 h-full flex flex-col items-center justify-center text-center p-2 xs:p-3 sm:p-4 md:p-4 lg:p-5 xl:p-6">
+                          <motion.h3 
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.6, delay: 0.3 }}
+                            viewport={{ once: true }}
+                            className={`text-sm xs:text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl font-script mb-1 xs:mb-1 sm:mb-2 group-hover:scale-110 transition-transform duration-300 text-center leading-tight ${
+                              collection.image ? 'text-white' : 'text-primary'
+                            }`}
+                          >
+                            {collection.name}
+                          </motion.h3>
+                          {collection.description && (
+                            <motion.p 
+                              initial={{ opacity: 0, y: 20 }}
+                              whileInView={{ opacity: 1, y: 0 }}
+                              transition={{ duration: 0.6, delay: 0.4 }}
+                              viewport={{ once: true }}
+                              className={`text-xs xs:text-xs sm:text-sm md:text-sm lg:text-sm xl:text-base font-medium text-center line-clamp-2 ${
+                                collection.image ? 'text-white/90' : 'text-gray-600'
+                              }`}
+                            >
+                              {collection.description}
+                            </motion.p>
+                          )}
+                        </div>
+                        
+                        {/* Hover overlay */}
+                        <div className={`absolute inset-0 transition-all duration-300 ${
+                          collection.image 
+                            ? 'bg-primary/0 group-hover:bg-primary/10' 
+                            : 'bg-primary/0 group-hover:bg-primary/5'
+                        }`} />
+                      </div>
+                    </Link>
+                  </motion.div>
+                ))
+              ) : (
+                <div className="flex items-center justify-center w-full py-12">
+                  <p className="text-gray-500">No collections available</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Our Occasions Section */}
+      <section className="pt-8 pb-8 bg-gradient-to-br from-soft-pink-100 to-soft-pink-200 overflow-hidden">
+        <div className="container mx-auto px-4">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+            className="text-center mb-8 xs:mb-10 sm:mb-12"
+          >
+            <h2 className="text-3xl xs:text-4xl sm:text-5xl md:text-6xl !font-cormorant text-primary mb-3 xs:mb-4">OCCASIONS</h2>
+            <p className="text-dark-gray max-w-2xl mx-auto text-sm xs:text-base sm:text-lg">
+              Find the perfect jewelry for every special moment in your life
+            </p>
+          </motion.div>
+          
+          {/* Occasions Carousel */}
           <div className="relative group">
             {/* Navigation Arrows - Invisible by default, show on hover */}
             <button
@@ -967,7 +1016,7 @@ export default function Home() {
             {/* Occasions Slider Container */}
             <div 
               ref={setOccasionsSliderRef}
-              id="collections-slider"
+              id="occasions-slider"
               className="flex gap-3 sm:gap-4 md:gap-6 overflow-x-auto overflow-y-hidden scrollbar-hide pb-2 cursor-grab active:cursor-grabbing px-8 sm:px-10 md:px-12 lg:px-16"
               style={{ 
                 scrollbarWidth: 'none', 
@@ -983,11 +1032,10 @@ export default function Home() {
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
             >
-              {occasions
-                .filter(occ => occ.value !== 'all')
-                .map((occasion, index) => (
+              {occasions.length > 0 ? (
+                occasions.map((occasion: any, index: number) => (
                   <motion.div
-                    key={occasion.value}
+                    key={occasion.value || occasion._id || index}
                     initial={{ opacity: 0, y: 30 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: index * 0.1 }}
@@ -1057,7 +1105,12 @@ export default function Home() {
                       </div>
                     </Link>
                   </motion.div>
-                ))}
+                ))
+              ) : (
+                <div className="flex items-center justify-center w-full py-12">
+                  <p className="text-gray-500">No occasions available</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

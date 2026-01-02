@@ -11,6 +11,7 @@ import {
   MdInventory as Package,
   MdGridOn as Collections,
   MdFolderOpen as FolderOpen,
+  MdCardGiftcard as Gift,
   MdImage as Image,
   MdShoppingCart as ShoppingCart,
   MdPeople as Users,
@@ -30,6 +31,7 @@ const navigation = [
   { name: 'Products', href: '/admin/products', icon: Package },
   { name: 'Collections', href: '/admin/collections', icon: Collections },
   { name: 'Categories', href: '/admin/categories', icon: FolderOpen },
+  { name: 'Occasions', href: '/admin/occasions', icon: Gift },
   { name: 'Banners', href: '/admin/banners', icon: Image },
   { name: 'Orders', href: '/admin/orders', icon: ShoppingCart },
   { name: 'Users', href: '/admin/users', icon: Users },
@@ -216,9 +218,7 @@ export default function AdminLayout({
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 hover:shadow-sm'
                   }`}
                   style={{ 
-                    backgroundColor: isActive ? 'var(--accent)' : '',
-                    animationDelay: `${index * 50}ms`,
-                    animation: 'admin-slide-in-left 0.5s ease-out forwards'
+                    backgroundColor: isActive ? 'var(--accent)' : ''
                   }}
                   onClick={closeSidebar}
                 >
@@ -323,9 +323,7 @@ export default function AdminLayout({
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 hover:shadow-sm'
                   } ${sidebarCollapsed ? 'sidebar-tooltip' : ''}`}
                   style={{ 
-                    backgroundColor: isActive ? 'var(--accent)' : '',
-                    animationDelay: `${index * 50}ms`,
-                    animation: 'admin-slide-in-left 0.5s ease-out forwards'
+                    backgroundColor: isActive ? 'var(--accent)' : ''
                   }}
                   title={sidebarCollapsed ? item.name : undefined}
                 >

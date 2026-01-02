@@ -44,7 +44,7 @@ interface ViewModalProps {
   onClose: () => void;
   data: UserData | null;
   onEdit?: () => void;
-  type: 'user' | 'product' | 'category' | 'collection' | 'order' | 'banner';
+  type: 'user' | 'product' | 'category' | 'collection' | 'occasion' | 'order' | 'banner';
 }
 
 export default function ViewModal({ isOpen, onClose, data, onEdit, type }: ViewModalProps) {
@@ -773,6 +773,114 @@ export default function ViewModal({ isOpen, onClose, data, onEdit, type }: ViewM
     );
   };
 
+  const renderOccasionDetails = () => {
+    if (!data) return <div>No data available</div>;
+    
+    const occasion = data as any;
+
+    return (
+      <div className="space-y-6">
+        {/* Occasion Image */}
+        {occasion.image && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Occasion Image
+            </label>
+            <img
+              src={occasion.image}
+              alt={occasion.name}
+              className="h-48 w-full object-cover rounded-lg border-2 border-gray-200"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = '/placeholder-occasion.png';
+              }}
+            />
+          </div>
+        )}
+
+        {/* Basic Information */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Occasion Name
+            </label>
+            <div className="block w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm text-gray-900">
+              {occasion.name || 'N/A'}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Value (Slug)
+            </label>
+            <div className="block w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm text-gray-900">
+              <code className="px-2 py-1 bg-gray-200 rounded">{occasion.value || 'N/A'}</code>
+            </div>
+          </div>
+        </div>
+
+        {/* Description */}
+        {occasion.description && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Description
+            </label>
+            <div className="block w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm text-gray-900 min-h-[100px]">
+              {occasion.description}
+            </div>
+          </div>
+        )}
+
+        {/* Status and Sort Order */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Status
+            </label>
+            <div className="block w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50">
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                occasion.isActive 
+                  ? 'bg-green-100 text-green-800' 
+                  : 'bg-red-100 text-red-800'
+              }`}>
+                {occasion.isActive ? 'Active' : 'Inactive'}
+              </span>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Sort Order
+            </label>
+            <div className="block w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm text-gray-900">
+              {occasion.sortOrder || 0}
+            </div>
+          </div>
+        </div>
+
+        {/* Additional Info */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-gray-200 pt-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Created Date
+            </label>
+            <div className="block w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm text-gray-900">
+              {occasion.createdAt ? new Date(occasion.createdAt).toLocaleDateString() : 'N/A'}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Last Updated
+            </label>
+            <div className="block w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm text-gray-900">
+              {occasion.updatedAt ? new Date(occasion.updatedAt).toLocaleDateString() : 'N/A'}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderContent = () => {
     switch (type) {
       case 'user':
@@ -783,6 +891,8 @@ export default function ViewModal({ isOpen, onClose, data, onEdit, type }: ViewM
         return renderCategoryDetails();
       case 'collection':
         return renderCollectionDetails();
+      case 'occasion':
+        return renderOccasionDetails();
       case 'banner':
         return renderBannerDetails();
       default:

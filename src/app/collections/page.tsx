@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
@@ -10,7 +10,6 @@ import { useSearch } from '@/contexts/SearchContext';
 import { 
   loadCollectionsProductsData, 
   loadCollectionsCategoriesData, 
-  loadCollectionsOccasionsData,
   loadProductsWithFilters,
   searchProducts
 } from '@/utils/dataLoader';
@@ -61,13 +60,6 @@ const sortOptions = [
   { name: 'Price: High to Low', value: 'price_desc' },
 ];
 
-const itemsPerPageOptions = [
-  { name: '9 per page', value: 9 },
-  { name: '12 per page', value: 12 },
-  { name: '18 per page', value: 18 },
-  { name: '24 per page', value: 24 },
-  { name: 'All', value: 999 },
-];
 
 function CollectionsContent() {
   const searchParams = useSearchParams();
@@ -98,8 +90,6 @@ function CollectionsContent() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
   const [isOccasionDropdownOpen, setIsOccasionDropdownOpen] = useState(!!initialOccasion);
-  const [itemsPerPage, setItemsPerPage] = useState(9);
-  const [currentPage, setCurrentPage] = useState(1);
   const [isLargeScreen, setIsLargeScreen] = useState(false);
   
   // Data state
@@ -107,13 +97,10 @@ function CollectionsContent() {
   const [categories, setCategories] = useState<CollectionCategory[]>([]);
   const [occasions, setOccasions] = useState<CollectionOccasion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [pagination, setPagination] = useState({
-    currentPage: 1,
-    totalPages: 1,
-    totalProducts: 0,
-    hasNextPage: false,
-    hasPrevPage: false
-  });
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMoreProducts, setHasMoreProducts] = useState(true);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
   
   // Search state
   const [searchTerm, setSearchTerm] = useState(initialSearch);
@@ -160,18 +147,34 @@ function CollectionsContent() {
     const loadData = async () => {
       try {
         setIsLoading(true);
-        const [categoriesData, occasionsData] = await Promise.all([
+        const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+        
+        const [categoriesData, occasionsResponse] = await Promise.all([
           loadCollectionsCategoriesData(),
-          loadCollectionsOccasionsData()
+          fetch(`${baseURL}/occasions?sortBy=sortOrder&sortOrder=asc`)
         ]);
 
         setCategories(categoriesData);
-        setOccasions(occasionsData);
+        
+        // Load occasions from API
+        if (occasionsResponse.ok) {
+          const occasionsData = await occasionsResponse.json();
+          if (occasionsData.success && occasionsData.data) {
+            setOccasions(occasionsData.data);
+          } else {
+            console.error('Failed to load occasions:', occasionsData.message);
+            setOccasions([]);
+          }
+        } else {
+          console.error('Failed to load occasions:', occasionsResponse.status);
+          setOccasions([]);
+        }
         
         // Load products with current filters
         // Note: loadFilteredProducts will be called by useEffect when selectedCategories changes
       } catch (error) {
         console.error('Error loading collections data:', error);
+        setOccasions([]);
       } finally {
         setIsLoading(false);
       }
@@ -211,13 +214,18 @@ function CollectionsContent() {
   }, [occasions.length, loadOccasionCounts]);
 
   // Load filtered products
-  const loadFilteredProducts = useCallback(async () => {
+  const loadFilteredProducts = useCallback(async (page: number = 1, append: boolean = false) => {
     try {
-      setIsLoading(true);
+      if (append) {
+        setIsLoadingMore(true);
+      } else {
+        setIsLoading(true);
+        setProducts([]);
+      }
       
       const filters = {
-        page: currentPage,
-        limit: itemsPerPage,
+        page: page,
+        limit: 9,
         category: selectedCategories.includes('all') ? undefined : selectedCategories[0],
         occasion: selectedOccasion || undefined,
         minPrice: priceRange[0],
@@ -272,21 +280,29 @@ function CollectionsContent() {
         }
         
         // Apply pagination
-        const startIndex = (currentPage - 1) * itemsPerPage;
-        const endIndex = startIndex + itemsPerPage;
+        const startIndex = (page - 1) * 9;
+        const endIndex = startIndex + 9;
         const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
         
-        setProducts(paginatedProducts);
-        setPagination({
-          currentPage,
-          totalPages: Math.ceil(filteredProducts.length / itemsPerPage),
-          totalProducts: filteredProducts.length,
-          hasNextPage: endIndex < filteredProducts.length,
-          hasPrevPage: currentPage > 1
-        });
+        if (append) {
+          setProducts(prev => [...prev, ...paginatedProducts]);
+        } else {
+          setProducts(paginatedProducts);
+          // Only update totalProducts on first load, not when appending
+          setTotalProducts(filteredProducts.length);
+        }
+        
+        setHasMoreProducts(endIndex < filteredProducts.length);
       } else {
-        setProducts(result.data);
-        setPagination(result.pagination);
+        if (append) {
+          setProducts(prev => [...prev, ...result.data]);
+        } else {
+          setProducts(result.data);
+          // Only update totalProducts on first load, not when appending
+          setTotalProducts(result.pagination.totalProducts);
+        }
+        
+        setHasMoreProducts(result.pagination.hasNextPage);
       }
     } catch (error) {
       console.error('Error loading filtered products:', error);
@@ -302,36 +318,34 @@ function CollectionsContent() {
           );
         }
         
-        setProducts(filteredProducts);
-        setPagination({
-          currentPage: 1,
-          totalPages: 1,
-          totalProducts: filteredProducts.length,
-          hasNextPage: false,
-          hasPrevPage: false
-        });
+        if (append) {
+          setProducts(prev => [...prev, ...filteredProducts]);
+        } else {
+          setProducts(filteredProducts);
+        }
+        
+        setTotalProducts(filteredProducts.length);
+        setHasMoreProducts(false);
       } catch (fallbackError) {
         console.error('Error loading fallback products:', fallbackError);
-        setProducts([]);
-        setPagination({
-          currentPage: 1,
-          totalPages: 1,
-          totalProducts: 0,
-          hasNextPage: false,
-          hasPrevPage: false
-        });
+        if (!append) {
+          setProducts([]);
+        }
+        setTotalProducts(0);
+        setHasMoreProducts(false);
       }
     } finally {
       setIsLoading(false);
+      setIsLoadingMore(false);
     }
-  }, [currentPage, itemsPerPage, selectedCategories, selectedOccasion, priceRange, sortBy, searchTerm]);
+  }, [selectedCategories, selectedOccasion, priceRange, sortBy, searchTerm]);
 
   // Apply all pending filters
   const applyFilters = () => {
     setSelectedCategories(pendingCategories);
     setSelectedOccasions(pendingOccasions);
     setPriceRange(pendingPriceRange);
-    setCurrentPage(1); // Reset to first page when applying filters
+    setCurrentPage(1);
     
     // Sync selectedOccasion with selectedOccasions
     if (pendingOccasions.includes('all') || pendingOccasions.length === 0) {
@@ -355,6 +369,7 @@ function CollectionsContent() {
     setSortBy('newest');
     setCurrentPage(1);
     setSelectedOccasion(null);
+    setProducts([]);
   };
   
   // Handle occasion card click
@@ -371,6 +386,7 @@ function CollectionsContent() {
       setPendingOccasions([occasionValue]);
     }
     setCurrentPage(1);
+    setProducts([]);
     // Open the occasion dropdown in the filter sidebar to show the selection
     setIsOccasionDropdownOpen(true);
   };
@@ -423,19 +439,16 @@ function CollectionsContent() {
     const shouldLoadProducts = hasCategorySelected || selectedOccasion || searchTerm;
     
     if (categories.length > 0 && shouldLoadProducts) {
-      loadFilteredProducts();
+      setCurrentPage(1);
+      loadFilteredProducts(1, false);
     } else if (categories.length > 0 && !shouldLoadProducts) {
       // Clear products when no filters are selected
       setProducts([]);
-      setPagination({
-        currentPage: 1,
-        totalPages: 1,
-        totalProducts: 0,
-        hasNextPage: false,
-        hasPrevPage: false
-      });
+      setTotalProducts(0);
+      setHasMoreProducts(false);
+      setCurrentPage(1);
     }
-  }, [loadFilteredProducts, categories.length, selectedCategories, selectedOccasion, searchTerm]);
+  }, [loadFilteredProducts, categories.length, selectedCategories, selectedOccasion, searchTerm, priceRange, sortBy]);
   
   // Handle window width check for hydration safety
   useEffect(() => {
@@ -506,25 +519,67 @@ function CollectionsContent() {
     }
   };
   
-  // Use products directly from API (server-side filtering)
-  const paginatedProducts = products;
+  // Ref for the sentinel element (triggers loading when it comes into view)
+  const [sentinelRef, setSentinelRef] = useState<HTMLDivElement | null>(null);
 
-  // Reset to page 1 when filters change
-  const handleItemsPerPageChange = (newItemsPerPage: number) => {
-    setItemsPerPage(newItemsPerPage);
-    setCurrentPage(1);
-    // loadFilteredProducts will be called by useEffect when dependencies change
-  };
+  // Track if we're currently loading to prevent duplicate requests
+  const isLoadingRef = useRef(false);
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    // loadFilteredProducts will be called by useEffect when currentPage changes
-  };
+  // Load more products when scrolling
+  const loadMoreProducts = useCallback(async () => {
+    if (isLoadingMore || !hasMoreProducts || isLoadingRef.current) return;
+    
+    isLoadingRef.current = true;
+    const nextPage = currentPage + 1;
+    setCurrentPage(nextPage);
+    
+    try {
+      await loadFilteredProducts(nextPage, true);
+    } finally {
+      // Small delay to prevent rapid successive loads
+      setTimeout(() => {
+        isLoadingRef.current = false;
+      }, 300);
+    }
+  }, [currentPage, isLoadingMore, hasMoreProducts, loadFilteredProducts]);
+
+  // Infinite scroll using Intersection Observer (better performance and UX)
+  useEffect(() => {
+    if (!sentinelRef || !hasMoreProducts || isLoadingMore || isLoadingRef.current) return;
+
+    // Create Intersection Observer with rootMargin to trigger loading earlier
+    // This loads content when sentinel is 600px from viewport bottom
+    // This prevents footer from being visible before new content loads
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting && hasMoreProducts && !isLoadingMore && !isLoadingRef.current) {
+          // Use requestAnimationFrame to ensure smooth loading
+          requestAnimationFrame(() => {
+            loadMoreProducts();
+          });
+        }
+      },
+      {
+        root: null, // viewport
+        rootMargin: '600px', // Trigger when sentinel is 600px from viewport bottom
+        threshold: 0.1, // Trigger when 10% of sentinel is visible
+      }
+    );
+
+    observer.observe(sentinelRef);
+
+    return () => {
+      if (sentinelRef) {
+        observer.unobserve(sentinelRef);
+      }
+    };
+  }, [sentinelRef, hasMoreProducts, isLoadingMore, loadMoreProducts]);
 
   const handleSortChange = (newSortBy: string) => {
     setSortBy(newSortBy);
     setCurrentPage(1);
-    // loadFilteredProducts will be called by useEffect when sortBy changes
+    setProducts([]);
   };
 
   const handlePriceRangeChange = (newPriceRange: number[]) => {
@@ -933,39 +988,30 @@ function CollectionsContent() {
                 className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4"
               >
                 <p className="text-dark-gray text-sm md:text-base">
-                  Showing <span className="font-medium text-primary">{((pagination.currentPage - 1) * itemsPerPage) + 1}-{Math.min(pagination.currentPage * itemsPerPage, pagination.totalProducts)}</span> of <span className="font-medium text-primary">{pagination.totalProducts}</span> products
+                  {totalProducts > 0 ? (
+                    <>
+                      Showing <span className="font-medium text-primary">{products.length}</span> of <span className="font-medium text-primary">{totalProducts}</span> products
+                    </>
+                  ) : (
+                    <>
+                      <span className="font-medium text-primary">{products.length}</span> products
+                    </>
+                  )}
                 </p>
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <label htmlFor="itemsPerPage" className="text-sm md:text-base text-dark-gray">Items per page:</label>
-                    <select
-                      id="itemsPerPage"
-                      value={itemsPerPage}
-                      onChange={(e) => handleItemsPerPageChange(parseInt(e.target.value))}
-                      className="sort-select border border-gray-300 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
-                    >
-                      {itemsPerPageOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <label htmlFor="sort" className="text-sm md:text-base text-dark-gray">Sort by:</label>
-                    <select
-                      id="sort"
-                      value={sortBy}
-                      onChange={(e) => handleSortChange(e.target.value)}
-                      className="sort-select border border-gray-300 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
-                    >
-                      {sortOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                <div className="flex items-center gap-2">
+                  <label htmlFor="sort" className="text-sm md:text-base text-dark-gray">Sort by:</label>
+                  <select
+                    id="sort"
+                    value={sortBy}
+                    onChange={(e) => handleSortChange(e.target.value)}
+                    className="sort-select border border-gray-300 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
+                  >
+                    {sortOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </motion.div>
               
@@ -974,7 +1020,7 @@ function CollectionsContent() {
                 className="product-grid grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-3 gap-3 sm:gap-4 md:gap-6"
               >
                 <AnimatePresence mode="popLayout">
-                    {paginatedProducts.map((product, index) => (
+                    {products.map((product, index) => (
                       <motion.div
                         key={product._id || (product as any).id || index}
                         layout
@@ -999,7 +1045,35 @@ function CollectionsContent() {
                 </AnimatePresence>
                   </motion.div>
               
-              {paginatedProducts.length === 0 && (
+              {/* Sentinel element - triggers loading when it comes into view */}
+              {/* Positioned with padding to ensure smooth loading before footer appears */}
+              {hasMoreProducts && (
+                <div 
+                  ref={setSentinelRef}
+                  className="h-20 w-full py-8"
+                  aria-hidden="true"
+                  style={{ minHeight: '200px' }}
+                />
+              )}
+              
+              {/* Loading more indicator */}
+              {isLoadingMore && (
+                <div className="flex justify-center items-center py-12">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-sm text-dark-gray">Loading more products...</p>
+                  </div>
+                </div>
+              )}
+              
+              {/* End of products message */}
+              {!hasMoreProducts && products.length > 0 && (
+                <div className="flex justify-center items-center py-12">
+                  <p className="text-sm text-dark-gray">You've reached the end of the products</p>
+                </div>
+              )}
+              
+              {products.length === 0 && (
                 <motion.div 
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -1031,116 +1105,6 @@ function CollectionsContent() {
                     </>
                   )}
                 </motion.div>
-              )}
-              
-              {/* Pagination */}
-              {pagination.totalProducts > 0 && pagination.totalPages > 1 && (
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.3 }}
-                  className="mt-12 flex justify-center"
-              >
-                  <nav className="flex items-center flex-wrap justify-center gap-2">
-                    {/* Previous Button */}
-                    <motion.button 
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => handlePageChange(Math.max(1, pagination.currentPage - 1))}
-                      disabled={!pagination.hasPrevPage}
-                      className="pagination-button pagination-nav px-3 py-2 sm:px-4 sm:py-2 rounded-lg border border-gray-300 hover:bg-soft-pink-100 hover:border-primary transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
-                      aria-label="Previous page"
-                    >
-                      <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                      </svg>
-                      <span className="hidden sm:inline ml-1">Prev</span>
-                    </motion.button>
-                    
-                    {/* Page Numbers */}
-                    {(() => {
-                      const totalPages = pagination.totalPages;
-                      const currentPage = pagination.currentPage;
-                      const pages: (number | string)[] = [];
-                      
-                      if (totalPages <= 7) {
-                        // Show all pages if 7 or fewer
-                        for (let i = 1; i <= totalPages; i++) {
-                          pages.push(i);
-                        }
-                      } else {
-                        // Always show first page
-                        pages.push(1);
-                        
-                        if (currentPage <= 3) {
-                          // Near the beginning
-                          for (let i = 2; i <= 4; i++) {
-                            pages.push(i);
-                          }
-                          pages.push('ellipsis-end');
-                          pages.push(totalPages);
-                        } else if (currentPage >= totalPages - 2) {
-                          // Near the end
-                          pages.push('ellipsis-start');
-                          for (let i = totalPages - 3; i <= totalPages; i++) {
-                            pages.push(i);
-                          }
-                        } else {
-                          // In the middle
-                          pages.push('ellipsis-start');
-                          for (let i = currentPage - 1; i <= currentPage + 1; i++) {
-                            pages.push(i);
-                          }
-                          pages.push('ellipsis-end');
-                          pages.push(totalPages);
-                        }
-                      }
-                      
-                      return pages.map((page, index) => {
-                        if (page === 'ellipsis-start' || page === 'ellipsis-end') {
-                          return (
-                            <span key={`ellipsis-${index}`} className="px-2 py-2 text-gray-400">
-                              ...
-                            </span>
-                          );
-                        }
-                        
-                        return (
-                          <motion.button 
-                            key={page}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => handlePageChange(page as number)}
-                            className={`pagination-button pagination-page px-3 py-2 sm:px-4 sm:py-2 rounded-lg border transition-all duration-200 text-sm sm:text-base min-w-[2.5rem] sm:min-w-[3rem] ${
-                              pagination.currentPage === page 
-                                ? 'bg-primary text-white border-primary shadow-md font-medium' 
-                                : 'border-gray-300 hover:bg-soft-pink-100 hover:border-primary bg-white'
-                            }`}
-                            aria-label={`Go to page ${page}`}
-                            aria-current={pagination.currentPage === page ? 'page' : undefined}
-                          >
-                            {page}
-                          </motion.button>
-                        );
-                      });
-                    })()}
-                    
-                    {/* Next Button */}
-                    <motion.button 
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => handlePageChange(Math.min(pagination.totalPages, pagination.currentPage + 1))}
-                      disabled={!pagination.hasNextPage}
-                      className="pagination-button pagination-nav px-3 py-2 sm:px-4 sm:py-2 rounded-lg border border-gray-300 hover:bg-soft-pink-100 hover:border-primary transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
-                      aria-label="Next page"
-                    >
-                      <span className="hidden sm:inline mr-1">Next</span>
-                      <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </motion.button>
-                  </nav>
-              </motion.div>
               )}
             </div>
           </div>

@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
-import { FiMinus, FiPlus, FiHeart, FiStar, FiX, FiCheck } from 'react-icons/fi';
+import { FiMinus, FiPlus, FiHeart, FiStar, FiX, FiCheck, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import MainLayout from '@/components/layout/MainLayout';
 import Button from '@/components/ui/Button';
 import ProductCard from '@/components/product/ProductCard';
@@ -112,6 +112,10 @@ export default function ProductDetail() {
   const [wishlistMessage, setWishlistMessage] = useState('');
   const [isAddedToWishlist, setIsAddedToWishlist] = useState(false);
   
+  // Carousel state
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  
   // Review form state
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviewRating, setReviewRating] = useState(0);
@@ -196,52 +200,6 @@ export default function ProductDetail() {
 
     loadData();
   }, [slug]);
-
-  // Handle window resize to update preview position
-  useEffect(() => {
-    const handleResize = () => {
-      if (isZoomed && isHovered && imageContainerRef.current && imageSectionRef.current) {
-        // Recalculate preview position on resize
-        const section = imageSectionRef.current;
-        const sectionRect = section.getBoundingClientRect();
-        const spaceOnRight = window.innerWidth - sectionRect.right;
-        const spaceOnLeft = sectionRect.left;
-        
-        const viewportWidth = window.innerWidth;
-        
-        // Responsive preview width based on screen size
-        let previewWidth = 450;
-        if (viewportWidth >= 1920) {
-          previewWidth = 550;
-        } else if (viewportWidth >= 1440) {
-          previewWidth = 500;
-        } else if (viewportWidth >= 1280) {
-          previewWidth = 450;
-        } else if (viewportWidth >= 1025) {
-          previewWidth = 400;
-        } else if (viewportWidth >= 901) {
-          previewWidth = 380;
-        } else if (viewportWidth >= 768) {
-          previewWidth = 320;
-        }
-        
-        // Determine best position for preview
-        if (spaceOnRight < previewWidth + 20 && spaceOnLeft > previewWidth + 20) {
-          setPreviewPosition('left');
-        } else if (spaceOnRight >= previewWidth + 20) {
-          setPreviewPosition('right');
-        } else if (spaceOnLeft >= previewWidth + 20) {
-          setPreviewPosition('left');
-        } else {
-          // If both sides are tight, use the side with more space
-          setPreviewPosition(spaceOnRight > spaceOnLeft ? 'right' : 'left');
-        }
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [isZoomed, isHovered]);
   
   // Get related products (excluding current product)
   const relatedProducts = products
@@ -528,126 +486,59 @@ export default function ProductDetail() {
     return { status: 'available', message: `${stock} in stock` };
   };
 
-  // Zoom handlers
-  const handleMouseEnter = () => {
-    setIsHovered(true);
+  // Carousel navigation functions
+  const goToPreviousImage = useCallback(() => {
+    if (!product?.images || product.images.length === 0) return;
+    setActiveImageIndex((prev) => (prev === 0 ? product.images.length - 1 : prev - 1));
+  }, [product?.images]);
+
+  const goToNextImage = useCallback(() => {
+    if (!product?.images || product.images.length === 0) return;
+    setActiveImageIndex((prev) => (prev === product.images.length - 1 ? 0 : prev + 1));
+  }, [product?.images]);
+
+  // Keyboard navigation for carousel
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!product?.images || product.images.length <= 1) return;
+      
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        goToPreviousImage();
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        goToNextImage();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [product?.images, goToPreviousImage, goToNextImage]);
+
+  // Swipe gesture handlers for carousel
+  const minSwipeDistance = 50;
+
+  const onTouchStartCarousel = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
   };
 
-  const handleMouseLeave = () => {
-    setIsHovered(false);
-    setIsZoomed(false);
+  const onTouchMoveCarousel = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
   };
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!imageContainerRef.current || !imageSectionRef.current) return;
+  const onTouchEndCarousel = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
     
-    const container = imageContainerRef.current;
-    const section = imageSectionRef.current;
-    const rect = container.getBoundingClientRect();
-    const sectionRect = section.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    // Calculate percentage position (0-100)
-    const percentX = (x / rect.width) * 100;
-    const percentY = (y / rect.height) * 100;
-    
-    // Clamp values between 0 and 100
-    const clampedX = Math.max(0, Math.min(100, percentX));
-    const clampedY = Math.max(0, Math.min(100, percentY));
-    
-    // Determine preview position based on available space and screen size
-    const spaceOnRight = window.innerWidth - sectionRect.right;
-    const spaceOnLeft = sectionRect.left;
-    const viewportWidth = window.innerWidth;
-    
-    // Responsive preview width based on screen size
-    let previewWidth = 450; // Default for desktop
-    if (viewportWidth >= 1920) {
-      previewWidth = 550;
-    } else if (viewportWidth >= 1440) {
-      previewWidth = 500;
-    } else if (viewportWidth >= 1280) {
-      previewWidth = 450;
-    } else if (viewportWidth >= 1025) {
-      previewWidth = 400;
-    } else if (viewportWidth >= 901) {
-      previewWidth = 380;
-    } else if (viewportWidth >= 768) {
-      previewWidth = 320;
+    if (isLeftSwipe) {
+      goToNextImage();
     }
-    
-    // On very small screens, don't show preview if it won't fit
-    if (viewportWidth < 768) {
-      // Mobile - preview is hidden via CSS
-      return;
+    if (isRightSwipe) {
+      goToPreviousImage();
     }
-    
-    // Determine best position for preview
-    // If neither side has enough space, prefer right but adjust
-    if (spaceOnRight < previewWidth + 20 && spaceOnLeft > previewWidth + 20) {
-      setPreviewPosition('left');
-    } else if (spaceOnRight >= previewWidth + 20) {
-      setPreviewPosition('right');
-    } else if (spaceOnLeft >= previewWidth + 20) {
-      setPreviewPosition('left');
-    } else {
-      // If both sides are tight, use the side with more space
-      setPreviewPosition(spaceOnRight > spaceOnLeft ? 'right' : 'left');
-    }
-    
-    setMousePosition({ x, y });
-    setZoomPosition({ x: clampedX, y: clampedY });
-    setIsZoomed(true);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (!imageContainerRef.current) return;
-    
-    e.preventDefault(); // Prevent scrolling while zooming
-    
-    const container = imageContainerRef.current;
-    const rect = container.getBoundingClientRect();
-    const touch = e.touches[0];
-    const x = touch.clientX - rect.left;
-    const y = touch.clientY - rect.top;
-    
-    // Calculate percentage position (0-100)
-    const percentX = (x / rect.width) * 100;
-    const percentY = (y / rect.height) * 100;
-    
-    // Clamp values between 0 and 100
-    const clampedX = Math.max(0, Math.min(100, percentX));
-    const clampedY = Math.max(0, Math.min(100, percentY));
-    
-    setMousePosition({ x, y });
-    setZoomPosition({ x: clampedX, y: clampedY });
-    setIsZoomed(true);
-  };
-
-  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
-    // Initialize zoom on touch start
-    if (!imageContainerRef.current) return;
-    
-    const container = imageContainerRef.current;
-    const rect = container.getBoundingClientRect();
-    const touch = e.touches[0];
-    const x = touch.clientX - rect.left;
-    const y = touch.clientY - rect.top;
-    
-    const percentX = (x / rect.width) * 100;
-    const percentY = (y / rect.height) * 100;
-    
-    setMousePosition({ x, y });
-    setZoomPosition({ 
-      x: Math.max(0, Math.min(100, percentX)), 
-      y: Math.max(0, Math.min(100, percentY)) 
-    });
-    setIsZoomed(true);
-  };
-
-  const handleTouchEnd = () => {
-    setIsZoomed(false);
   };
 
   // Helper function to get image URL
@@ -701,57 +592,80 @@ export default function ProductDetail() {
           <div ref={imageSectionRef} className="order-1 lg:order-1">
             <div 
               ref={imageContainerRef}
-              className="relative aspect-square bg-soft-pink-100 rounded-lg sm:rounded-xl overflow-visible mb-4 sm:mb-6 cursor-zoom-in product-image-zoom-container"
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
-              onMouseMove={handleMouseMove}
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
+              className="group relative aspect-square bg-soft-pink-100 rounded-lg sm:rounded-xl overflow-visible mb-4 sm:mb-6"
+              onTouchStart={onTouchStartCarousel}
+              onTouchMove={onTouchMoveCarousel}
+              onTouchEnd={onTouchEndCarousel}
             >
               {product.images && product.images.length > 0 ? (
                 <>
                   <div className="relative w-full h-full overflow-hidden rounded-lg sm:rounded-xl">
-                    <Image
-                      src={getImageUrl(product.images[activeImageIndex])}
-                      alt={product.name}
-                      fill
-                      className={`object-cover transition-transform duration-700 ease-in-out ${
-                        isZoomed ? 'product-image-zoomed' : ''
-                      }`}
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 40vw"
-                      style={{
-                        transformOrigin: `${zoomPosition.x}% ${zoomPosition.y}%`,
-                      }}
-                    />
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={activeImageIndex}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="absolute inset-0"
+                      >
+                        <Image
+                          src={getImageUrl(product.images[activeImageIndex])}
+                          alt={product.name}
+                          fill
+                          className="object-cover transition-opacity duration-300 ease-in-out"
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 40vw"
+                        />
+                      </motion.div>
+                    </AnimatePresence>
                   </div>
-                  {/* Zoom Lens */}
-                  {isZoomed && isHovered && (
-                    <div 
-                      className="product-zoom-lens"
-                      style={{
-                        left: `${mousePosition.x}px`,
-                        top: `${mousePosition.y}px`,
-                        display: 'block',
-                      }}
-                    />
-                  )}
-                  {/* Zoomed Preview */}
-                  {isZoomed && isHovered && (
-                    <div 
-                      className={`product-zoom-preview product-zoom-preview-${previewPosition}`}
-                      style={{ display: 'block' }}
-                    >
-                      <div 
-                        className="product-zoom-preview-image"
-                        style={{
-                          backgroundImage: `url(${(() => {
-                            const imgUrl = getImageUrl(product.images[activeImageIndex]);
-                            return typeof imgUrl === 'string' ? imgUrl : (imgUrl as any).src || '';
-                          })()})`,
-                          backgroundPosition: `${zoomPosition.x}% ${zoomPosition.y}%`,
+                  
+                  {/* Carousel Navigation Arrows */}
+                  {product.images.length > 1 && (
+                    <>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          goToPreviousImage();
                         }}
-                      />
+                        className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 bg-white/95 hover:bg-white rounded-full p-2 sm:p-3 shadow-lg transition-all duration-200 hover:scale-110 opacity-100"
+                        aria-label="Previous image"
+                        type="button"
+                      >
+                        <FiChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          goToNextImage();
+                        }}
+                        className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20 bg-white/95 hover:bg-white rounded-full p-2 sm:p-3 shadow-lg transition-all duration-200 hover:scale-110 opacity-100"
+                        aria-label="Next image"
+                        type="button"
+                      >
+                        <FiChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                      </button>
+                    </>
+                  )}
+                  
+                  {/* Carousel Indicators */}
+                  {product.images.length > 1 && (
+                    <div className="absolute bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-2 sm:gap-2.5 bg-black/20 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                      {product.images.map((_, index) => (
+                        <button
+                          key={index}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveImageIndex(index);
+                          }}
+                          className={`transition-all duration-200 rounded-full cursor-pointer ${
+                            activeImageIndex === index
+                              ? 'bg-accent w-7 sm:w-9 h-2.5 sm:h-3 shadow-md'
+                              : 'bg-white/70 hover:bg-white/90 w-2.5 sm:w-3 h-2.5 sm:h-3'
+                          }`}
+                          aria-label={`Go to image ${index + 1}`}
+                        />
+                      ))}
                     </div>
                   )}
                 </>
@@ -761,32 +675,6 @@ export default function ProductDetail() {
                 </div>
               )}
             </div>
-            {product.images && product.images.length > 0 && (
-              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3">
-                {product.images.map((image, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setActiveImageIndex(index)}
-                    className={`relative aspect-square rounded-md sm:rounded-lg overflow-hidden transition-all duration-200 ${
-                      activeImageIndex === index 
-                        ? 'ring-2 ring-accent scale-105' 
-                        : 'hover:scale-105'
-                    }`}
-                  >
-                    <Image
-                      src={typeof image === 'string' 
-                        ? (imageMap[image] || image)
-                        : (image as any).url || image
-                      }
-                      alt={`${product.name} - Image ${index + 1}`}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 640px) 33vw, (max-width: 1024px) 12vw, 10vw"
-                    />
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
           
           {/* Product Info */}

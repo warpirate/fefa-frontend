@@ -85,6 +85,39 @@ export const loadCollectionsOccasionsData = (): Promise<CollectionOccasion[]> =>
   loadJsonData<CollectionOccasion[]>('/data/collections-occasions.json');
 
 // New API-based functions for collections page
+// Retry function with exponential backoff for rate limiting
+async function fetchWithRetry(
+  url: string,
+  maxRetries: number = 3,
+  initialDelay: number = 1000
+): Promise<Response> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(url);
+      
+      // If rate limited (429), retry with exponential backoff
+      if (response.status === 429 && attempt < maxRetries) {
+        const delay = initialDelay * Math.pow(2, attempt);
+        console.warn(`Rate limited (429). Retrying in ${delay}ms... (attempt ${attempt + 1}/${maxRetries + 1})`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+      
+      return response;
+    } catch (error) {
+      lastError = error as Error;
+      if (attempt < maxRetries) {
+        const delay = initialDelay * Math.pow(2, attempt);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  
+  throw lastError || new Error('Failed to fetch after retries');
+}
+
 export const loadProductsWithFilters = async (params: {
   page?: number;
   limit?: number;
@@ -124,7 +157,7 @@ export const loadProductsWithFilters = async (params: {
     if (params.search) queryParams.append('search', params.search);
     if (params.isFeatured) queryParams.append('isFeatured', 'true');
 
-    const response = await fetch(`${API_HELPERS.getUrl('/products')}?${queryParams.toString()}`);
+    const response = await fetchWithRetry(`${API_HELPERS.getUrl('/products')}?${queryParams.toString()}`);
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);

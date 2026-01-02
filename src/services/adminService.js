@@ -511,10 +511,10 @@ class AdminService {
   }
 
   // Get single category
-  // Get all occasions/collections
+  // Get all occasions/collections (from database API)
   async getOccasions() {
     try {
-      const response = await fetch(`${this.baseURL}/products/occasions`, {
+      const response = await fetch(`${this.baseURL}/occasions?sortBy=sortOrder&sortOrder=asc`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
@@ -887,6 +887,254 @@ class AdminService {
         error: error.message || 'Failed to delete collection'
       };
     }
+  }
+
+  // ==================== OCCASIONS ====================
+
+  // Get all occasions
+  async getAllOccasions(params = {}) {
+    try {
+      const queryParams = new URLSearchParams();
+      
+      // Add pagination
+      if (params.page) queryParams.append('page', params.page);
+      if (params.limit) queryParams.append('limit', params.limit);
+      
+      // Add filters
+      if (params.search) queryParams.append('search', params.search);
+      if (params.status) queryParams.append('isActive', params.status === 'active');
+      
+      // Add sorting
+      if (params.sortBy) queryParams.append('sortBy', params.sortBy);
+      if (params.sortOrder) queryParams.append('sortOrder', params.sortOrder);
+      
+      // Remove isActive filter for admin view to show all occasions
+      queryParams.append('admin', 'true');
+
+      const url = `${this.baseURL}/occasions?${queryParams}`;
+      console.log('Fetching occasions from:', url);
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: this.getAuthHeaders()
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { message: errorText || `HTTP ${response.status}: ${response.statusText}` };
+        }
+        throw new Error(errorData.message || 'Failed to fetch occasions');
+      }
+
+      const data = await response.json();
+
+      return {
+        success: true,
+        data: data.data || [],
+        count: data.count || 0
+      };
+    } catch (error) {
+      console.error('Get all occasions error:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to fetch occasions',
+        data: [] // Return empty array on error
+      };
+    }
+  }
+
+  // Get single occasion
+  async getOccasionById(id) {
+    try {
+      const response = await fetch(`${this.baseURL}/occasions/id/${id}`, {
+        method: 'GET',
+        headers: this.getAuthHeaders()
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch occasion');
+      }
+
+      return {
+        success: true,
+        data: data.data
+      };
+    } catch (error) {
+      console.error('Get occasion by ID error:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to fetch occasion'
+      };
+    }
+  }
+
+  // Create occasion (supports FormData for image upload)
+  async createOccasion(occasionData) {
+    try {
+      // Check if occasionData is FormData (for image upload) or regular object
+      const isFormData = occasionData instanceof FormData;
+      
+      const headers = this.getAuthHeaders();
+      
+      // Remove Content-Type header for FormData (browser will set it with boundary)
+      if (isFormData) {
+        delete headers['Content-Type'];
+      }
+
+      const response = await fetch(`${this.baseURL}/occasions`, {
+        method: 'POST',
+        headers: headers,
+        body: isFormData ? occasionData : JSON.stringify(occasionData)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // Handle authentication errors
+        if (response.status === 401 || response.status === 403) {
+          return {
+            success: false,
+            requiresAuth: true,
+            error: data.message || 'Authentication required'
+          };
+        }
+        throw new Error(data.message || 'Failed to create occasion');
+      }
+
+      return {
+        success: true,
+        data: data.data
+      };
+    } catch (error) {
+      console.error('Create occasion error:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to create occasion'
+      };
+    }
+  }
+
+  // Update occasion (supports FormData for image upload)
+  async updateOccasion(id, occasionData) {
+    try {
+      // Check if occasionData is FormData (for image upload) or regular object
+      const isFormData = occasionData instanceof FormData;
+      
+      const headers = this.getAuthHeaders();
+      
+      // Remove Content-Type header for FormData (browser will set it with boundary)
+      if (isFormData) {
+        delete headers['Content-Type'];
+      }
+
+      const response = await fetch(`${this.baseURL}/occasions/${id}`, {
+        method: 'PUT',
+        headers: headers,
+        body: isFormData ? occasionData : JSON.stringify(occasionData)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // Handle authentication errors
+        if (response.status === 401 || response.status === 403) {
+          return {
+            success: false,
+            requiresAuth: true,
+            error: data.message || 'Authentication required'
+          };
+        }
+        throw new Error(data.message || 'Failed to update occasion');
+      }
+
+      return {
+        success: true,
+        data: data.data
+      };
+    } catch (error) {
+      console.error('Update occasion error:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to update occasion'
+      };
+    }
+  }
+
+  // Delete occasion
+  async deleteOccasion(id) {
+    try {
+      const response = await fetch(`${this.baseURL}/occasions/${id}`, {
+        method: 'DELETE',
+        headers: this.getAuthHeaders()
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to delete occasion');
+      }
+
+      return {
+        success: true,
+        message: data.message || 'Occasion deleted successfully'
+      };
+    } catch (error) {
+      console.error('Delete occasion error:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to delete occasion'
+      };
+    }
+  }
+
+  // Migrate occasions from JSON to database
+  async migrateOccasions() {
+    try {
+      const response = await fetch(`${this.baseURL}/occasions/migrate`, {
+        method: 'POST',
+        headers: this.getAuthHeaders()
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to migrate occasions');
+      }
+
+      return {
+        success: true,
+        data: data.data
+      };
+    } catch (error) {
+      console.error('Migrate occasions error:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to migrate occasions'
+      };
+    }
+  }
+
+  // Format occasion for display
+  formatOccasionForDisplay(occasion) {
+    return {
+      id: occasion._id || occasion.id,
+      name: occasion.name,
+      value: occasion.value,
+      description: occasion.description || '',
+      image: occasion.image || '/placeholder-occasion.png',
+      isActive: occasion.isActive !== undefined ? occasion.isActive : true,
+      sortOrder: occasion.sortOrder || 0,
+      seoTitle: occasion.seoTitle || '',
+      seoDescription: occasion.seoDescription || '',
+      createdAt: occasion.createdAt,
+      updatedAt: occasion.updatedAt
+    };
   }
 
   // Format collection for display (similar to formatCategoryForDisplay)
