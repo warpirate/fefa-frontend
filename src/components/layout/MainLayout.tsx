@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import Header from './Header';
 import Footer from './Footer';
+import MobileNavBar from './MobileNavBar';
 import LoginModal from '@/components/auth/LoginModal';
 import { useLoginModal } from '@/contexts/LoginModalContext';
 
@@ -22,12 +23,13 @@ export default function MainLayout({ children }: MainLayoutProps) {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 20 }}
           transition={{ duration: 0.3 }}
-          className="lg:min-h-screen pt-16 sm:pt-20 md:pt-24 lg:pt-28 bg-white dark:bg-[#0a0a0a] transition-colors duration-300"
+          className="lg:min-h-screen pt-0 bg-white dark:bg-[#0a0a0a] transition-colors duration-300"
         >
           {children}
         </motion.main>
       </AnimatePresence>
       <Footer />
+      <MobileNavBar />
       <LoginModal isOpen={isLoginOpen} onClose={closeLoginModal} redirectTo={redirectTo} />
     </>
   );

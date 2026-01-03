@@ -608,6 +608,14 @@ export default function Home() {
     });
   };
 
+  // Scroll to categories section
+  const scrollToCategories = () => {
+    const categoriesSection = document.getElementById('categories-section');
+    if (categoriesSection) {
+      categoriesSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <DataLoader>
       <MainLayout>
@@ -615,30 +623,66 @@ export default function Home() {
       {/* Brand Banner Section */}
       <section 
         id="brand-banner"
-        className="relative py-12 xs:py-16 sm:py-20 md:py-24 overflow-hidden flex items-center justify-center min-h-[40vh]"
+        className="relative py-0 overflow-hidden flex items-center justify-center h-[50vh] sm:h-[55vh] md:h-[60vh]"
         style={{ 
           background: 'linear-gradient(135deg, #470031 0%, #470031 50%, #470031 100%)'
         }}
       >
-        <div className="container mx-auto px-4 relative z-10 flex items-center justify-center">
+        <div className="container mx-auto px-4 relative z-10 flex items-center justify-center h-full">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
             className="flex items-center justify-center"
           >
-            <div className="relative w-32 h-32 xs:w-40 xs:h-40 sm:w-48 sm:h-48 md:w-56 md:h-56 lg:w-64 lg:h-64">
+            <div className="relative w-[90vw] h-[90vw] max-w-[500px] max-h-[500px] xs:w-[85vw] xs:h-[85vw] xs:max-w-[600px] xs:max-h-[600px] sm:w-[80vw] sm:h-[80vw] sm:max-w-[700px] sm:max-h-[700px] md:w-[75vw] md:h-[75vw] md:max-w-[800px] md:max-h-[800px] lg:w-[70vw] lg:h-[70vw] lg:max-w-[900px] lg:max-h-[900px] xl:w-[65vw] xl:h-[65vw] xl:max-w-[1000px] xl:max-h-[1000px] 2xl:w-[60vw] 2xl:h-[60vw] 2xl:max-w-[1100px] 2xl:max-h-[1100px]">
               <Image
-                src="/logo.jpg"
+                src="/images/fefa_logo_transparent_4k.png"
                 alt="FEFA Logo"
                 fill
                 className="object-contain drop-shadow-2xl"
                 priority
-                sizes="(max-width: 475px) 128px, (max-width: 640px) 160px, (max-width: 768px) 192px, (max-width: 1024px) 224px, 256px"
+                sizes="(max-width: 475px) 90vw, (max-width: 640px) 85vw, (max-width: 768px) 80vw, (max-width: 1024px) 75vw, (max-width: 1280px) 70vw, (max-width: 1536px) 65vw, 60vw"
               />
             </div>
           </motion.div>
         </div>
+        
+        {/* Scroll Down Indicator */}
+        <motion.button
+          onClick={scrollToCategories}
+          className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 text-[#DBC078] hover:text-[#F5E6B8] transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-[#DBC078] focus:ring-offset-2 focus:ring-offset-[#470031] rounded-full p-2"
+          aria-label="Scroll to categories"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 1 }}
+        >
+          <span className="text-xs sm:text-sm font-medium tracking-wider uppercase">Scroll</span>
+          <motion.div
+            animate={{ y: [0, 8, 0] }}
+            transition={{
+              duration: 1.5,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+            className="flex flex-col items-center"
+          >
+            <svg
+              className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 14l-7 7m0 0l-7-7m7 7V3"
+              />
+            </svg>
+          </motion.div>
+        </motion.button>
       </section>
 
       {/* Jewelry Categories Section */}
