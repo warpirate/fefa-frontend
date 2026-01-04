@@ -13,6 +13,7 @@ import DataLoader from '@/components/DataLoader';
 import { useDataContext } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import dataService from '@/services/dataService';
+import bannerService from '@/services/bannerService';
 import { 
   loadProductsWithFilters
 } from '@/utils/dataLoader';
@@ -78,8 +79,12 @@ export default function Home() {
   const [occasionsSliderRef, setOccasionsSliderRef] = useState<HTMLDivElement | null>(null);
   const [canScrollOccasionsLeft, setCanScrollOccasionsLeft] = useState(false);
   const [canScrollOccasionsRight, setCanScrollOccasionsRight] = useState(true);
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
   const [email, setEmail] = useState('');
   const [isSubscribing, setIsSubscribing] = useState(false);
+  const [heroBanners, setHeroBanners] = useState<any[]>([]);
+  const [loadingBanners, setLoadingBanners] = useState(true);
+  const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
   
   // Get data from context
   const { 
@@ -108,11 +113,55 @@ export default function Home() {
   const safeTrendingLooks = getSafeArray(trending);
   const safeTestimonials = getSafeArray(testimonials);
 
+  // Fetch hero banners from admin (with delay to avoid rate limiting)
+  useEffect(() => {
+    const loadHeroBanners = async () => {
+      // Delay to stagger API requests
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      try {
+        setLoadingBanners(true);
+        const result = await bannerService.getActiveBanners();
+        if (result.success && result.data) {
+          // Filter banners - if position field exists, filter by 'hero', otherwise show all
+          const banners = Array.isArray(result.data) 
+            ? result.data.filter((banner: any) => !banner.position || banner.position === 'hero' || banner.position === '')
+            : [];
+          setHeroBanners(banners);
+        }
+      } catch (error) {
+        // Silently fail - don't spam console
+        setHeroBanners([]);
+      } finally {
+        setLoadingBanners(false);
+      }
+    };
+
+    loadHeroBanners();
+  }, []);
+
+  // Auto-rotate banners if multiple exist
+  useEffect(() => {
+    if (heroBanners.length <= 1) return;
+    
+    const interval = setInterval(() => {
+      setCurrentBannerIndex((prev) => (prev + 1) % heroBanners.length);
+    }, 5000); // Change banner every 5 seconds
+
+    return () => clearInterval(interval);
+  }, [heroBanners.length]);
+
+  // Track banner impressions when they become visible (simplified - disabled to avoid rate limiting)
+  useEffect(() => {
+    // Disabled to avoid rate limiting issues
+    // Banner impressions can be tracked server-side if needed
+  }, [currentBannerIndex, heroBanners]);
+
   // Fetch featured products with delay to avoid rate limiting
   useEffect(() => {
     const loadFeaturedProducts = async () => {
-      // Small delay to stagger API requests
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Delay to stagger API requests
+      await new Promise(resolve => setTimeout(resolve, 5000));
       
       try {
         setLoadingFeaturedProducts(true);
@@ -134,9 +183,12 @@ export default function Home() {
     loadFeaturedProducts();
   }, []);
 
-  // Load collections data
+  // Load collections data (with delay to avoid rate limiting)
   useEffect(() => {
     const loadCollections = async () => {
+      // Delay to stagger API requests
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
       try {
         const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
         const response = await fetch(`${baseURL}/collections?sortBy=sortOrder&sortOrder=asc`);
@@ -152,7 +204,7 @@ export default function Home() {
           setCollections([]);
         }
       } catch (error) {
-        console.error('Failed to load collections:', error);
+        // Silently fail
         setCollections([]);
       }
     };
@@ -167,128 +219,47 @@ export default function Home() {
     setCollectionCounts({});
   }, [collections]);
 
-  // Load occasions data from API (database only, no JSON fallback) with retry logic
+  // Load occasions data (with delay to avoid rate limiting)
   useEffect(() => {
     const loadOccasions = async () => {
-      // Delay to avoid hitting API immediately on page load
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Delay to stagger API requests
+      await new Promise(resolve => setTimeout(resolve, 4000));
       
-      const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-      const url = `${baseURL}/occasions?sortBy=sortOrder&sortOrder=asc`;
-      
-      // Retry logic with exponential backoff
-      let lastError: Error | null = null;
-      const maxRetries = 3;
-      const initialDelay = 1000;
-      
-      for (let attempt = 0; attempt <= maxRetries; attempt++) {
-        try {
-          const response = await fetch(url);
-          
-          // If rate limited (429), retry with exponential backoff
-          if (response.status === 429 && attempt < maxRetries) {
-            const delay = initialDelay * Math.pow(2, attempt);
-            console.warn(`Rate limited (429) loading occasions. Retrying in ${delay}ms... (attempt ${attempt + 1}/${maxRetries + 1})`);
-            await new Promise(resolve => setTimeout(resolve, delay));
-            continue;
-          }
-          
-          if (response.ok) {
-            const data = await response.json();
-            if (data.success && data.data) {
-              // Filter out any inactive occasions and ensure we have valid data
-              const activeOccasions = data.data.filter((occ: any) => occ.isActive !== false);
-              setOccasions(activeOccasions);
-              return; // Success, exit function
-            } else {
-              console.error('Failed to load occasions:', data.message || 'Unknown error');
-              setOccasions([]);
-              return;
-            }
+      try {
+        const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+        const response = await fetch(`${baseURL}/occasions?sortBy=sortOrder&sortOrder=asc`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.data) {
+            const activeOccasions = data.data.filter((occ: any) => occ.isActive !== false);
+            setOccasions(activeOccasions);
           } else {
-            // If not 429 and not ok, try to get error message
-            const errorData = await response.json().catch(() => ({}));
-            if (response.status === 429 && attempt < maxRetries) {
-              const delay = initialDelay * Math.pow(2, attempt);
-              await new Promise(resolve => setTimeout(resolve, delay));
-              continue;
-            }
-            console.error('Failed to load occasions:', errorData.message || `HTTP ${response.status}`);
             setOccasions([]);
-            return;
           }
-        } catch (error) {
-          lastError = error as Error;
-          if (attempt < maxRetries) {
-            const delay = initialDelay * Math.pow(2, attempt);
-            await new Promise(resolve => setTimeout(resolve, delay));
-          }
+        } else {
+          setOccasions([]);
         }
+      } catch (error) {
+        // Silently fail
+        setOccasions([]);
       }
-      
-      // If we get here, all retries failed
-      if (lastError) {
-        console.error('Failed to load occasions after retries:', lastError);
-      }
-      setOccasions([]);
     };
 
     loadOccasions();
   }, []);
 
-  // Load occasion product counts with throttling to prevent rate limiting
+  // Load occasion product counts (simplified - skip to avoid rate limiting)
   useEffect(() => {
-    const loadOccasionCounts = async () => {
-      if (occasions.length === 0) return;
-      
-      // Delay loading to avoid hitting API immediately on page load
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      try {
-        const counts: Record<string, number> = {};
-        const occasionsList = occasions.filter((occ: any) => occ.value && occ.value !== 'all');
-        
-        // Process occasions in batches of 3 with delays to prevent rate limiting
-        const batchSize = 3;
-        const delayBetweenBatches = 500; // 500ms delay between batches
-        
-        for (let i = 0; i < occasionsList.length; i += batchSize) {
-          const batch = occasionsList.slice(i, i + batchSize);
-          
-          // Process batch in parallel
-          await Promise.all(
-            batch.map(async (occasion: any) => {
-              try {
-                const result = await loadProductsWithFilters({
-                  occasion: occasion.value,
-                  limit: 1,
-                  page: 1
-                });
-                // Use the totalProducts from pagination which reflects the actual count
-                counts[occasion.value] = result.pagination?.totalProducts || 0;
-              } catch (error: any) {
-                console.error(`Error loading count for ${occasion.value}:`, error);
-                // If API fails (including 429), set to 0
-                counts[occasion.value] = 0;
-              }
-            })
-          );
-          
-          // Update counts incrementally as we load them
-          setOccasionCounts({ ...counts });
-          
-          // Add delay between batches (except for the last batch)
-          if (i + batchSize < occasionsList.length) {
-            await new Promise(resolve => setTimeout(resolve, delayBetweenBatches));
-          }
-        }
-      } catch (error) {
-        console.error('Error loading occasion counts:', error);
-      }
-    };
-
+    // Skip loading counts to avoid rate limiting - set all to 0
     if (occasions.length > 0) {
-      loadOccasionCounts();
+      const counts: Record<string, number> = {};
+      occasions.forEach((occ: any) => {
+        if (occ.value && occ.value !== 'all') {
+          counts[occ.value] = 0;
+        }
+      });
+      setOccasionCounts(counts);
     }
   }, [occasions]);
 
@@ -617,73 +588,87 @@ export default function Home() {
   };
 
   return (
-    <DataLoader>
+      <DataLoader>
       <MainLayout>
       <div className="overflow-x-hidden">
-      {/* Brand Banner Section */}
-      <section 
-        id="brand-banner"
-        className="relative py-0 overflow-hidden flex items-center justify-center h-[50vh] sm:h-[55vh] md:h-[60vh]"
-        style={{ 
-          background: 'linear-gradient(135deg, #470031 0%, #470031 50%, #470031 100%)'
-        }}
-      >
-        <div className="container mx-auto px-4 relative z-10 flex items-center justify-center h-full">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            className="flex items-center justify-center"
-          >
-            <div className="relative w-[90vw] h-[90vw] max-w-[500px] max-h-[500px] xs:w-[85vw] xs:h-[85vw] xs:max-w-[600px] xs:max-h-[600px] sm:w-[80vw] sm:h-[80vw] sm:max-w-[700px] sm:max-h-[700px] md:w-[75vw] md:h-[75vw] md:max-w-[800px] md:max-h-[800px] lg:w-[70vw] lg:h-[70vw] lg:max-w-[900px] lg:max-h-[900px] xl:w-[65vw] xl:h-[65vw] xl:max-w-[1000px] xl:max-h-[1000px] 2xl:w-[60vw] 2xl:h-[60vw] 2xl:max-w-[1100px] 2xl:max-h-[1100px]">
-              <Image
-                src="/images/fefa_logo_transparent_4k.png"
-                alt="FEFA Logo"
-                fill
-                className="object-contain drop-shadow-2xl"
-                priority
-                sizes="(max-width: 475px) 90vw, (max-width: 640px) 85vw, (max-width: 768px) 80vw, (max-width: 1024px) 75vw, (max-width: 1280px) 70vw, (max-width: 1536px) 65vw, 60vw"
-              />
-            </div>
-          </motion.div>
-        </div>
-        
-        {/* Scroll Down Indicator */}
-        <motion.button
-          onClick={scrollToCategories}
-          className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 text-[#DBC078] hover:text-[#F5E6B8] transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-[#DBC078] focus:ring-offset-2 focus:ring-offset-[#470031] rounded-full p-2"
-          aria-label="Scroll to categories"
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 1 }}
+      {/* Brand Banner Section - FEFA Logo (Always First) */}
+      {loadingBanners ? (
+        <section 
+          id="brand-banner"
+          className="relative py-0 overflow-hidden flex items-center justify-center h-[50vh] sm:h-[55vh] md:h-[60vh] lg:h-[65vh] mt-8 sm:mt-12 md:mt-16"
+          style={{ 
+            background: 'linear-gradient(135deg, #470031 0%, #470031 50%, #470031 100%)'
+          }}
         >
-          <span className="text-xs sm:text-sm font-medium tracking-wider uppercase">Scroll</span>
-          <motion.div
-            animate={{ y: [0, 8, 0] }}
-            transition={{
-              duration: 1.5,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-            className="flex flex-col items-center"
-          >
-            <svg
-              className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
+          <div className="container mx-auto px-4 relative z-10 flex items-center justify-center h-full">
+            <div className="w-16 h-16 border-4 border-amber-400 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        </section>
+      ) : (
+        <section 
+          id="brand-banner"
+          className="relative py-0 overflow-hidden flex items-center justify-center h-[50vh] sm:h-[55vh] md:h-[60vh] lg:h-[65vh] mt-8 sm:mt-12 md:mt-16"
+          style={{ 
+            background: 'linear-gradient(135deg, #470031 0%, #470031 50%, #470031 100%)'
+          }}
+        >
+          <div className="container mx-auto px-4 relative z-10 flex items-center justify-center h-full">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="flex items-center justify-center"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 14l-7 7m0 0l-7-7m7 7V3"
-              />
-            </svg>
-          </motion.div>
-        </motion.button>
-      </section>
+              <div className="relative w-[70vw] h-[70vw] max-w-[400px] max-h-[400px] xs:w-[65vw] xs:h-[65vw] xs:max-w-[450px] xs:max-h-[450px] sm:w-[60vw] sm:h-[60vw] sm:max-w-[500px] sm:max-h-[500px] md:w-[55vw] md:h-[55vw] md:max-w-[550px] md:max-h-[550px] lg:w-[50vw] lg:h-[50vw] lg:max-w-[600px] lg:max-h-[600px]">
+                <Image
+                  src="/images/fefa_logo_transparent_4k.png"
+                  alt="FEFA Logo"
+                  fill
+                  className="object-contain drop-shadow-2xl"
+                  priority
+                  sizes="(max-width: 475px) 70vw, (max-width: 640px) 65vw, (max-width: 768px) 60vw, (max-width: 1024px) 55vw, (max-width: 1280px) 50vw, 50vw"
+                />
+              </div>
+            </motion.div>
+          </div>
+          
+          {/* Scroll Down Indicator */}
+          <motion.button
+            onClick={scrollToCategories}
+            className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 text-[#DBC078] hover:text-[#F5E6B8] transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-[#DBC078] focus:ring-offset-2 focus:ring-offset-[#470031] rounded-full p-2"
+            aria-label="Scroll to categories"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 1 }}
+          >
+            <span className="text-xs sm:text-sm font-medium tracking-wider uppercase">Scroll</span>
+            <motion.div
+              animate={{ y: [0, 8, 0] }}
+              transition={{
+                duration: 1.5,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+              className="flex flex-col items-center"
+            >
+              <svg
+                className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 14l-7 7m0 0l-7-7m7 7V3"
+                />
+              </svg>
+            </motion.div>
+          </motion.button>
+        </section>
+      )}
 
       {/* Jewelry Categories Section */}
       <section id="categories-section" className="pb-8 pt-12 bg-white dark:bg-[#0a0a0a] transition-colors duration-300">
@@ -799,6 +784,109 @@ export default function Home() {
           )}
         </div>
       </section>
+
+      {/* Hero Banner Section - Admin Managed (After Categories) */}
+      {!loadingBanners && heroBanners.length > 0 && (
+        <>
+          {heroBanners.map((banner: any, index: number) => {
+            const isActive = index === currentBannerIndex;
+            return (
+              <section 
+                key={banner._id || index}
+                id="hero-banner"
+                className={`relative py-0 overflow-hidden ${isActive ? 'block' : 'hidden'} h-[50vh] sm:h-[55vh] md:h-[60vh] lg:h-[65vh]`}
+              >
+                {/* Background Image */}
+                <div className="absolute inset-0 w-full h-full">
+                  <Image
+                    src={banner.image}
+                    alt={banner.title || 'Hero Banner'}
+                    fill
+                    className="object-cover"
+                    priority={index === 0}
+                    sizes="100vw"
+                  />
+                  {/* Overlay for better text readability */}
+                  <div className="absolute inset-0 bg-black/30" />
+                </div>
+
+                {/* Content Overlay */}
+                <div className="container mx-auto px-4 relative z-10 flex items-center h-full">
+                  <motion.div
+                    initial={{ opacity: 0, x: -30 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.8, ease: "easeOut" }}
+                    className="text-white max-w-2xl"
+                  >
+                    {banner.title && (
+                      <motion.h1
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.8, delay: 0.2 }}
+                        className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-serif mb-4 sm:mb-6 text-[#DBC078] drop-shadow-lg leading-tight"
+                        style={{ fontFamily: 'serif' }}
+                      >
+                        {banner.title}
+                      </motion.h1>
+                    )}
+                    {banner.subtitle && (
+                      <motion.p
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.8, delay: 0.4 }}
+                        className="text-base sm:text-lg md:text-xl mb-6 sm:mb-8 text-white/90 drop-shadow-md"
+                      >
+                        {banner.subtitle}
+                      </motion.p>
+                    )}
+                    {banner.buttonText && banner.buttonLink && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.8, delay: 0.6 }}
+                      >
+                        <Link href={banner.buttonLink}>
+                          <button
+                            onClick={async () => {
+                              // Track banner click
+                              if (banner._id) {
+                                try {
+                                  await bannerService.trackClick(banner._id);
+                                } catch (error) {
+                                  console.error('Failed to track banner click:', error);
+                                }
+                              }
+                            }}
+                            className="bg-[#FFA500] hover:bg-[#FF8C00] text-white font-semibold px-6 sm:px-8 py-3 sm:py-4 rounded-lg text-base sm:text-lg transition-all duration-300 transform hover:scale-105 shadow-lg"
+                          >
+                            {banner.buttonText}
+                          </button>
+                        </Link>
+                      </motion.div>
+                    )}
+                  </motion.div>
+                </div>
+
+                {/* Banner Indicators */}
+                {heroBanners.length > 1 && (
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+                    {heroBanners.map((_, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setCurrentBannerIndex(idx)}
+                        className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                          idx === currentBannerIndex ? 'bg-[#DBC078] w-8' : 'bg-white/50'
+                        }`}
+                        aria-label={`Go to banner ${idx + 1}`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </section>
+            );
+          })}
+        </>
+      )}
 
       {/* Features Section */}
       <section className="pt-12 pb-8 bg-white dark:bg-[#0a0a0a] overflow-hidden transition-colors duration-300">
@@ -1089,7 +1177,7 @@ export default function Home() {
                     <Link href={`/collections?occasion=${occasion.value}`} className="block">
                       <div className="relative h-40 xs:h-44 sm:h-48 md:h-52 lg:h-60 xl:h-80">
                         {/* Background Image or Gradient */}
-                        {occasion.image ? (
+                        {occasion.image && !failedImages.has(occasion.image) ? (
                           <>
                             <Image
                               src={occasion.image}
@@ -1097,6 +1185,11 @@ export default function Home() {
                               fill
                               className="object-cover"
                               sizes="(max-width: 475px) 160px, (max-width: 640px) 176px, (max-width: 768px) 192px, (max-width: 1024px) 208px, (max-width: 1280px) 240px, 320px"
+                              onError={() => {
+                                // Track failed image to avoid retrying
+                                setFailedImages(prev => new Set(prev).add(occasion.image));
+                              }}
+                              unoptimized={occasion.image.startsWith('/images/')}
                             />
                             {/* Dark overlay for better text readability */}
                             <div className="absolute inset-0 bg-black/30 group-hover:bg-black/40 transition-colors" />

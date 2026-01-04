@@ -200,18 +200,19 @@ class DataService {
       const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
       
       // Load critical API data sequentially with delays to prevent rate limiting
-      const carousel = await this.getCarousel();
+      // Skip carousel - it's loaded separately in page.tsx to avoid duplicate requests
+      const carousel = { success: false, data: null };
       await delay(300);
       
       const categories = await this.getCategories();
       await delay(300);
       
-      // Load collections data (may use API or fallback)
-      const collectionsCategories = await this.getCollectionsCategories();
-      await delay(200);
+      // Skip collections - loaded separately in page.tsx to avoid rate limiting
+      const collectionsCategories = { success: false, data: null };
+      await delay(100);
       
-      const collectionsOccasions = await this.getCollectionsOccasions();
-      await delay(200);
+      const collectionsOccasions = { success: false, data: null };
+      await delay(100);
       
       // Load products (may use API or fallback) - this is a heavy request
       const collectionsProducts = await this.getCollectionsProducts();
