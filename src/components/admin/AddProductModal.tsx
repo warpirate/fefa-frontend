@@ -605,7 +605,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
             Collections <span className="text-red-500">*</span>
           </label>
           {selectedOccasions.length === 0 ? (
-            <p className="text-sm text-gray-500 italic">Please select at least one occasion first to see available collections</p>
+            <p className="text-sm text-gray-500">Please select at least one occasion first to see available collections</p>
           ) : collections.length === 0 ? (
             <p className="text-sm text-gray-500">Loading collections...</p>
           ) : (

@@ -39,7 +39,6 @@ const navigation = [
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
-  const [isVisible, setIsVisible] = useState(true);
   const lastScrollY = useRef(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
@@ -60,21 +59,12 @@ export default function Header() {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
       
-      // Show header at top
+      // Only track scroll state for styling, don't hide header
       if (currentScrollY < 10) {
-        setIsVisible(true);
         setIsScrolled(false);
       } else {
         setIsScrolled(true);
-        // Hide when scrolling down, show when scrolling up
-        if (currentScrollY > lastScrollY.current && currentScrollY > 100) {
-          setIsVisible(false);
-        } else if (currentScrollY < lastScrollY.current) {
-          setIsVisible(true);
-        }
       }
-      
-      lastScrollY.current = currentScrollY;
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -155,10 +145,6 @@ export default function Header() {
   return (
       <header 
         className={`fixed top-0 w-full z-50 transition-all duration-300 border-b ${
-          isVisible 
-            ? 'translate-y-0' 
-            : '-translate-y-full'
-        } ${
           isScrolled 
             ? 'bg-[#470031] shadow-lg py-2 sm:py-3 border-[#470031]' 
             : 'bg-[#470031] py-3 sm:py-4 border-[#470031]'

@@ -202,15 +202,51 @@ export default function ProductDetail() {
   }, [slug]);
   
   // Get related products (excluding current product)
-  const relatedProducts = products
-    .filter(p => {
-      const productId = p._id || (p as any).id;
-      const currentProductId = product?._id || (product as any)?.id;
-      const productCategory = typeof p.category === 'string' ? p.category : p.category?.name;
-      const currentCategory = typeof product?.category === 'string' ? product?.category : product?.category?.name;
-      return productId !== currentProductId && productCategory === currentCategory;
-    })
-    .slice(0, 3);
+  // Helper function to normalize category for comparison
+  const getCategoryName = (category: string | any): string => {
+    if (!category) return '';
+    if (typeof category === 'string') {
+      return category.toLowerCase().trim();
+    }
+    // Handle category object
+    const name = category.name || category.slug || '';
+    return name.toLowerCase().trim();
+  };
+  
+  // Helper function to get category ID for comparison
+  const getCategoryId = (category: string | any): string => {
+    if (!category) return '';
+    if (typeof category === 'string') {
+      return category;
+    }
+    return category._id || category.id || '';
+  };
+  
+  const currentProductId = product?._id || (product as any)?.id;
+  const currentCategoryName = getCategoryName(product?.category);
+  const currentCategoryId = getCategoryId(product?.category);
+  
+  // Filter products from same category (by name or ID)
+  const sameCategoryProducts = products.filter(p => {
+    const productId = p._id || (p as any)?.id;
+    if (productId === currentProductId) return false;
+    
+    const productCategoryName = getCategoryName(p.category);
+    const productCategoryId = getCategoryId(p.category);
+    
+    // Match by name (case-insensitive) or by ID
+    return (currentCategoryName && productCategoryName === currentCategoryName) ||
+           (currentCategoryId && productCategoryId === currentCategoryId);
+  });
+  
+  // If we have same category products, use them, otherwise use any products
+  const relatedProducts = (sameCategoryProducts.length > 0 
+    ? sameCategoryProducts 
+    : products.filter(p => {
+        const productId = p._id || (p as any)?.id;
+        return productId !== currentProductId;
+      })
+  ).slice(0, 4);
   
   const decreaseQuantity = () => {
     if (quantity > 1) {
@@ -671,7 +707,7 @@ export default function ProductDetail() {
                 </>
               ) : (
                 <div className="w-full h-full bg-soft-pink-100 flex items-center justify-center rounded-lg sm:rounded-xl">
-                  <span className="text-primary font-script text-2xl sm:text-3xl lg:text-4xl">{product.name.charAt(0)}</span>
+                  <span className="text-primary font-cormorant text-2xl sm:text-3xl lg:text-4xl">{product.name.charAt(0)}</span>
                 </div>
               )}
             </div>
@@ -1244,14 +1280,22 @@ export default function ProductDetail() {
         </div>
         
         {/* Related Products */}
-        <div className="mt-8 sm:mt-12 lg:mt-16">
-          <h2 className="text-2xl sm:text-3xl font-script text-primary mb-6 sm:mb-8">You May Also Like</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-            {relatedProducts.map((relatedProduct) => (
-              <ProductCard key={relatedProduct._id || (relatedProduct as any).id} {...relatedProduct} />
-            ))}
+        {!isLoading && (
+          <div className="mt-8 sm:mt-12 lg:mt-16">
+            <h2 className="text-2xl sm:text-3xl font-cormorant text-primary mb-6 sm:mb-8">You May Also Like</h2>
+            {relatedProducts.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+                {relatedProducts.map((relatedProduct) => (
+                  <ProductCard key={relatedProduct._id || (relatedProduct as any).id} {...relatedProduct} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-gray-500">No related products available at the moment.</p>
+              </div>
+            )}
           </div>
-        </div>
+        )}
       </div>
     </MainLayout>
   );

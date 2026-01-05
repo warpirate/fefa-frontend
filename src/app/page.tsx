@@ -128,9 +128,18 @@ export default function Home() {
             ? result.data.filter((banner: any) => !banner.position || banner.position === 'hero' || banner.position === '')
             : [];
           setHeroBanners(banners);
+        } else if (!result.success) {
+          // Log error in development mode for debugging
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('[Home] Failed to load banners:', result.error);
+          }
+          setHeroBanners([]);
         }
       } catch (error) {
-        // Silently fail - don't spam console
+        // Log error in development mode
+        if (process.env.NODE_ENV === 'development') {
+          console.error('[Home] Error loading banners:', error);
+        }
         setHeroBanners([]);
       } finally {
         setLoadingBanners(false);
@@ -763,7 +772,7 @@ export default function Home() {
                           whileInView={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.6, delay: 0.3 }}
                           viewport={{ once: true }}
-                          className="text-base xs:text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-script mb-1 xs:mb-1 sm:mb-2 group-hover/card:scale-110 transition-transform duration-300 text-center leading-tight text-gray-900 dark:text-white"
+                          className="text-base xs:text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-cormorant mb-1 xs:mb-1 sm:mb-2 group-hover/card:scale-110 transition-transform duration-300 text-center leading-tight text-gray-900 dark:text-white"
                         >
                           {category.name}
                         </motion.h3>
@@ -939,12 +948,9 @@ export default function Home() {
                       <path d={feature.icon}/>
                     </svg>
                   </div>
-                  <h3 className="text-primary dark:text-purple-300 font-bold text-base xs:text-base sm:text-lg md:text-lg mb-1 xs:mb-1.5 leading-tight">
+                  <h3 className="text-primary dark:text-purple-300 font-bold text-base xs:text-base sm:text-lg md:text-lg leading-tight">
                     {feature.title}
                   </h3>
-                  <p className="text-dark-gray dark:text-gray-300 text-sm xs:text-sm sm:text-base md:text-base leading-snug px-1">
-                    {feature.description}
-                  </p>
                 </div>
               </motion.div>
             ))}
@@ -1046,7 +1052,7 @@ export default function Home() {
                           <div className="absolute inset-0 bg-gradient-to-br from-purple-100 via-pink-50 to-yellow-50">
                             {/* Large initial letter - positioned at top */}
                             <div className="absolute top-4 md:top-6 left-1/2 transform -translate-x-1/2 z-0">
-                              <span className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-script text-primary opacity-20 group-hover/card:opacity-30 transition-opacity">
+                              <span className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-cormorant text-primary opacity-20 group-hover/card:opacity-30 transition-opacity">
                                 {collection.name.charAt(0)}
                               </span>
                             </div>
@@ -1060,7 +1066,7 @@ export default function Home() {
                           whileInView={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.6, delay: 0.3 }}
                           viewport={{ once: true }}
-                          className="text-base xs:text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-script mb-1 xs:mb-1 sm:mb-2 group-hover/card:scale-110 transition-transform duration-300 text-center leading-tight text-gray-900 dark:text-white"
+                          className="text-base xs:text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-cormorant mb-1 xs:mb-1 sm:mb-2 group-hover/card:scale-110 transition-transform duration-300 text-center leading-tight text-gray-900 dark:text-white"
                         >
                           {collection.name}
                         </motion.h3>
@@ -1187,7 +1193,7 @@ export default function Home() {
                           <div className="absolute inset-0 bg-gradient-to-br from-purple-100 via-pink-50 to-yellow-50">
                             {/* Large initial letter - positioned at top */}
                             <div className="absolute top-4 md:top-6 left-1/2 transform -translate-x-1/2 z-0">
-                              <span className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-script text-primary opacity-20 group-hover/card:opacity-30 transition-opacity">
+                              <span className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-cormorant text-primary opacity-20 group-hover/card:opacity-30 transition-opacity">
                                 {occasion.name.charAt(0)}
                               </span>
                             </div>
@@ -1201,7 +1207,7 @@ export default function Home() {
                           whileInView={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.6, delay: 0.3 }}
                           viewport={{ once: true }}
-                          className="text-base xs:text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-script mb-1 xs:mb-1 sm:mb-2 group-hover/card:scale-110 transition-transform duration-300 text-center leading-tight text-gray-900 dark:text-white"
+                          className="text-base xs:text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-cormorant mb-1 xs:mb-1 sm:mb-2 group-hover/card:scale-110 transition-transform duration-300 text-center leading-tight text-gray-900 dark:text-white"
                         >
                           {occasion.name}
                         </motion.h3>
@@ -1502,7 +1508,7 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
-                <p className="text-dark-gray text-xs xs:text-sm mb-2 xs:mb-3 italic leading-relaxed">
+                <p className="text-dark-gray text-xs xs:text-sm mb-2 xs:mb-3 leading-relaxed">
                   "{testimonial.review}"
                 </p>
                 <p className="text-primary text-xs font-medium">
@@ -1536,7 +1542,7 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
-                <p className="text-dark-gray text-sm mb-3 italic">
+                <p className="text-dark-gray text-sm mb-3">
                   "{testimonial.review}"
                 </p>
                 <p className="text-primary text-xs font-medium">

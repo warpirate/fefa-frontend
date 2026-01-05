@@ -409,7 +409,7 @@ export default function LoginModal({ isOpen, onClose, redirectTo }: LoginModalPr
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.6, delay: 0.5 }}
-                  className="text-3xl font-script text-white mb-2"
+                  className="text-3xl font-cormorant text-white mb-2"
                 >
                   Welcome to FEFA
                 </motion.h2>

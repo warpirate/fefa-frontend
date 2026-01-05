@@ -152,7 +152,7 @@ export default function OrdersPage() {
           <div className="max-w-6xl mx-auto">
             {/* Header */}
             <div className="text-center mb-6 sm:mb-8">
-              <h1 className="text-3xl sm:text-4xl md:text-5xl font-script text-primary mb-2 sm:mb-4">My Orders</h1>
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-cormorant text-primary mb-2 sm:mb-4">My Orders</h1>
               <p className="text-dark-gray text-base sm:text-lg px-4">
                 Track and manage your jewelry orders
               </p>

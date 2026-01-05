@@ -266,7 +266,7 @@ export default function ConfirmationStep() {
         <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
           <FiCheck className="w-10 h-10 text-green-600" />
         </div>
-        <h1 className="text-3xl font-script text-accent mb-2">Order Confirmed!</h1>
+        <h1 className="text-3xl font-cormorant text-accent mb-2">Order Confirmed!</h1>
         <p className="text-gray-600 mb-4">
           Thank you for your purchase. Your order has been successfully placed.
         </p>

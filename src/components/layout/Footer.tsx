@@ -93,7 +93,7 @@ export default function Footer() {
         {/* Social Media & Contact */}
         <div className="flex flex-col sm:flex-row justify-between items-center border-t border-white/20 pt-4 xs:pt-6">
           <div className="mb-4 sm:mb-0 text-center sm:text-left">
-            <Link href="/" className="text-xl xs:text-2xl font-script text-accent">FEFA</Link>
+            <Link href="/" className="text-xl xs:text-2xl font-cormorant text-accent">FEFA</Link>
             <p className="mt-1 text-xs xs:text-sm opacity-80">A Celebration of Femininity</p>
           </div>
           <div className="flex space-x-2 xs:space-x-3 sm:space-x-4">

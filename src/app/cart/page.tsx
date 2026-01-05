@@ -182,7 +182,7 @@ export default function CartPage() {
           transition={{ duration: 0.5 }}
           className="mb-8 text-center"
         >
-          <h1 className="text-3xl md:text-4xl font-script text-accent">Shopping Cart</h1>
+          <h1 className="text-3xl md:text-4xl font-cormorant text-accent">Shopping Cart</h1>
           <div className="w-24 h-1 bg-accent mx-auto mt-2 rounded-full"></div>
           <p className="text-primary mt-4">
             {itemCount > 0 

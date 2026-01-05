@@ -282,14 +282,16 @@ export default function ProductCard({
         className="block relative overflow-hidden rounded-t-xl bg-soft-pink-100 dark:bg-[#2D1A2F] aspect-square cursor-pointer flex-shrink-0"
         onClick={handleProductClick}
       >
-        <div className="w-full h-full relative">
+        <div className="w-full h-full relative overflow-hidden">
           {currentImageUrl && !imageError ? (
             <>
               <Image
                 src={currentImageUrl}
                 alt={name}
                 fill
-                className="object-cover"
+                className={`object-cover transition-transform duration-500 ease-in-out ${
+                  isHovered ? 'scale-110' : 'scale-100'
+                }`}
                 sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                 onError={handleImageError}
               />

@@ -45,26 +45,84 @@ class BannerService {
   // Get active banners only
   async getActiveBanners() {
     try {
-      const response = await fetch(`${this.baseURL}/banners/active`, {
-        method: 'GET',
-        headers: this.getAuthHeaders()
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to fetch active banners');
+      // Check if baseURL is set
+      if (!this.baseURL) {
+        console.warn('[BannerService] API URL not configured');
+        return {
+          success: false,
+          error: 'API URL not configured. Please check your environment variables.',
+          data: []
+        };
       }
 
-      return {
-        success: true,
-        data: data.data || []
-      };
+      const url = `${this.baseURL}/banners/active`;
+      
+      // Add timeout to fetch request
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+      try {
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: this.getAuthHeaders(),
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        // Check if response is ok before trying to parse JSON
+        if (!response.ok) {
+          // Try to get error message from response
+          let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorMessage;
+          } catch (e) {
+            // If JSON parsing fails, use status text
+          }
+          
+          return {
+            success: false,
+            error: errorMessage,
+            data: []
+          };
+        }
+
+        const data = await response.json();
+
+        return {
+          success: true,
+          data: data.data || []
+        };
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        
+        // Handle different types of errors
+        if (fetchError.name === 'AbortError') {
+          return {
+            success: false,
+            error: 'Request timeout: Server took too long to respond',
+            data: []
+          };
+        }
+        
+        if (fetchError.message === 'Failed to fetch' || fetchError.name === 'TypeError') {
+          // Network error - server might not be running or CORS issue
+          return {
+            success: false,
+            error: `Cannot connect to server at ${this.baseURL}. Please ensure the backend server is running.`,
+            data: []
+          };
+        }
+        
+        throw fetchError; // Re-throw if it's a different error
+      }
     } catch (error) {
-      console.error('Get active banners error:', error);
+      console.error('[BannerService] Get active banners error:', error);
       return {
         success: false,
-        error: error.message || 'Failed to fetch active banners'
+        error: error.message || 'Failed to fetch active banners',
+        data: []
       };
     }
   }

@@ -135,7 +135,7 @@ export default function WishlistPage() {
           transition={{ duration: 0.5 }}
           className="mb-8 text-center"
         >
-          <h1 className="text-3xl md:text-4xl font-script text-accent">My Wishlist</h1>
+          <h1 className="text-3xl md:text-4xl font-cormorant text-accent">My Wishlist</h1>
           <div className="w-24 h-1 bg-accent mx-auto mt-2 rounded-full"></div>
           <p className="text-primary mt-4">
             {isAuthenticated 
@@ -245,7 +245,7 @@ export default function WishlistPage() {
                                   />
                                 </svg>
                               </div>
-                              <span className="text-primary font-script text-sm">No Image</span>
+                              <span className="text-primary font-cormorant text-sm">No Image</span>
                             </div>
                           </div>
                         )}

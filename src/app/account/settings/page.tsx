@@ -467,7 +467,7 @@ function SettingsPageContent() {
           <div className="container mx-auto px-4">
             <div className="max-w-6xl mx-auto">
               <div className="text-center px-4">
-                <h1 className="text-3xl sm:text-4xl md:text-5xl font-script text-primary mb-3 sm:mb-4">Access Denied</h1>
+                <h1 className="text-3xl sm:text-4xl md:text-5xl font-cormorant text-primary mb-3 sm:mb-4">Access Denied</h1>
                 <p className="text-dark-gray text-base sm:text-lg mb-6 sm:mb-8">
                   Please log in to access your account settings.
                 </p>
@@ -507,7 +507,7 @@ function SettingsPageContent() {
           <div className="max-w-6xl mx-auto">
             {/* Header */}
             <div className="text-center mb-6 sm:mb-8">
-              <h1 className="text-3xl sm:text-4xl md:text-5xl font-script text-primary mb-2 sm:mb-4">Account Settings</h1>
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-cormorant text-primary mb-2 sm:mb-4">Account Settings</h1>
               <p className="text-dark-gray text-base sm:text-lg px-4">
                 Manage your account preferences and security settings
               </p>

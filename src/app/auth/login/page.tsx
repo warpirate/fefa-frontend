@@ -128,7 +128,7 @@ export default function LoginPage() {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5, delay: 0.5 }}
-                className="text-2xl md:text-3xl lg:text-4xl font-script text-primary"
+                className="text-2xl md:text-3xl lg:text-4xl font-cormorant text-primary"
               >
                 Welcome Back
               </motion.h1>
