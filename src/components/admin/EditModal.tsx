@@ -41,6 +41,8 @@ export default function EditModal({ isOpen, onClose, data, onSave, type, loading
   const [categories, setCategories] = useState<any[]>([]);
   const [occasions, setOccasions] = useState<CollectionOccasion[]>([]);
   const [selectedOccasions, setSelectedOccasions] = useState<string[]>([]);
+  const [collections, setCollections] = useState<any[]>([]);
+  const [selectedCollections, setSelectedCollections] = useState<string[]>([]);
   const [existingImages, setExistingImages] = useState<Array<{ url: string; publicId?: string; isPrimary?: boolean; _id?: string }>>([]);
   const [newImagePreviews, setNewImagePreviews] = useState<Array<{ file: File; preview: string }>>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -135,8 +137,42 @@ export default function EditModal({ isOpen, onClose, data, onSave, type, loading
         });
         
         setSelectedOccasions(productOccasions);
+        
+        // Handle collections - check multiple possible locations
+        let productCollections: string[] = [];
+        
+        if (data.collections) {
+          if (Array.isArray(data.collections)) {
+            // Collections might be objects with _id or just IDs
+            productCollections = data.collections.map((col: any) => {
+              if (typeof col === 'string') return col;
+              return col._id || col.id || col;
+            }).filter(Boolean);
+          } else if (typeof data.collections === 'string') {
+            try {
+              const parsed = JSON.parse(data.collections);
+              if (Array.isArray(parsed)) {
+                productCollections = parsed.map((col: any) => {
+                  if (typeof col === 'string') return col;
+                  return col._id || col.id || col;
+                }).filter(Boolean);
+              }
+            } catch (e) {
+              productCollections = [];
+            }
+          }
+        }
+        
+        console.log('EditModal - Initializing collections:', {
+          dataCollections: data.collections,
+          productCollections,
+          type
+        });
+        
+        setSelectedCollections(productCollections);
       } else {
         setSelectedOccasions([]);
+        setSelectedCollections([]);
       }
     }
   }, [data, type]);
@@ -145,8 +181,16 @@ export default function EditModal({ isOpen, onClose, data, onSave, type, loading
     if (isOpen && type === 'product') {
       loadCategories();
       loadOccasions();
+      loadCollections(selectedOccasions);
     }
   }, [isOpen, type]);
+
+  // Load collections when occasions change
+  useEffect(() => {
+    if (isOpen && type === 'product') {
+      loadCollections(selectedOccasions);
+    }
+  }, [selectedOccasions, isOpen, type]);
 
   const loadCategories = async () => {
     try {
@@ -177,12 +221,36 @@ export default function EditModal({ isOpen, onClose, data, onSave, type, loading
     }
   };
 
+  const loadCollections = async (occasionValues: string[] = []) => {
+    try {
+      const result = await adminService.getCollections(occasionValues);
+      if (result.success) {
+        setCollections(result.data);
+      } else {
+        console.error('Error loading collections:', result.error);
+        setCollections([]);
+      }
+    } catch (err) {
+      console.error('Error loading collections:', err);
+      setCollections([]);
+    }
+  };
+
   const handleOccasionChange = (occasionValue: string) => {
     setSelectedOccasions(prev => {
-      if (prev.includes(occasionValue)) {
-        return prev.filter(occ => occ !== occasionValue);
+      const newOccasions = prev.includes(occasionValue)
+        ? prev.filter(occ => occ !== occasionValue)
+        : [...prev, occasionValue];
+      return newOccasions;
+    });
+  };
+
+  const handleCollectionChange = (collectionId: string) => {
+    setSelectedCollections(prev => {
+      if (prev.includes(collectionId)) {
+        return prev.filter(col => col !== collectionId);
       } else {
-        return [...prev, occasionValue];
+        return [...prev, collectionId];
       }
     });
   };
@@ -444,12 +512,14 @@ export default function EditModal({ isOpen, onClose, data, onSave, type, loading
       };
     }
     
-    // Add image data and occasions for product type
+    // Add image data, occasions, and collections for product type
     if (type === 'product') {
       updatedData.existingImages = existingImages;
       updatedData.newImageFiles = newImagePreviews.map(img => img.file);
       // Occasions are required, so always include them
       updatedData.occasions = selectedOccasions;
+      // Collections are required, so always include them
+      updatedData.collections = selectedCollections;
     }
     
     onSave(updatedData);
@@ -818,7 +888,7 @@ export default function EditModal({ isOpen, onClose, data, onSave, type, loading
       {/* Occasions Multi-Select - Tag Style */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Collections / Occasions <span className="text-red-500">*</span>
+          Occasions <span className="text-red-500">*</span>
         </label>
         {occasions.length === 0 ? (
           <p className="text-sm text-gray-500">Loading occasions...</p>
@@ -848,6 +918,43 @@ export default function EditModal({ isOpen, onClose, data, onSave, type, loading
         )}
         {errors.occasions && <p className="mt-1 text-sm text-red-600">{errors.occasions}</p>}
         <p className="mt-2 text-xs text-gray-500">Click on tags to select/deselect occasions</p>
+      </div>
+
+      {/* Collections Multi-Select - Tag Style */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Collections <span className="text-red-500">*</span>
+        </label>
+        {selectedOccasions.length === 0 ? (
+          <p className="text-sm text-gray-500 italic">Please select at least one occasion first to see available collections</p>
+        ) : collections.length === 0 ? (
+          <p className="text-sm text-gray-500">Loading collections...</p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {collections.map((collection) => {
+              const isSelected = selectedCollections.includes(collection._id || collection.id);
+              return (
+                <button
+                  key={collection._id || collection.id}
+                  type="button"
+                  onClick={() => handleCollectionChange(collection._id || collection.id)}
+                  className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
+                    isSelected
+                      ? 'bg-green-600 text-white hover:bg-green-700 shadow-md'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300'
+                  } ${errors.collections ? 'border-red-500' : ''}`}
+                >
+                  <span>{collection.name}</span>
+                  {isSelected && (
+                    <Close className="ml-2 w-4 h-4 hover:scale-110 transition-transform" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+        {errors.collections && <p className="mt-1 text-sm text-red-600">{errors.collections}</p>}
+        <p className="mt-2 text-xs text-gray-500">Click on tags to select/deselect collections. Collections are filtered based on selected occasions.</p>
       </div>
 
       {/* Pricing */}

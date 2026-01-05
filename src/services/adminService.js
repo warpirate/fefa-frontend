@@ -514,7 +514,7 @@ class AdminService {
   // Get all occasions/collections (from database API)
   async getOccasions() {
     try {
-      const response = await fetch(`${this.baseURL}/occasions?sortBy=sortOrder&sortOrder=asc`, {
+      const response = await fetch(`${this.baseURL}/products/occasions`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
@@ -536,6 +536,42 @@ class AdminService {
       return {
         success: false,
         error: error.message || 'Failed to fetch occasions',
+        data: []
+      };
+    }
+  }
+
+  // Get collections (optionally filtered by occasions)
+  async getCollections(occasionValues = []) {
+    try {
+      const queryParams = new URLSearchParams();
+      if (occasionValues && occasionValues.length > 0) {
+        queryParams.append('occasions', occasionValues.join(','));
+      }
+      queryParams.append('admin', 'true'); // Get all collections for admin
+
+      const response = await fetch(`${this.baseURL}/products/collections?${queryParams}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch collections');
+      }
+
+      return {
+        success: true,
+        data: data.data || []
+      };
+    } catch (error) {
+      console.error('Get collections error:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to fetch collections',
         data: []
       };
     }

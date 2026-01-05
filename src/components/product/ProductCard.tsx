@@ -105,8 +105,6 @@ export default function ProductCard({
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [showNotification, setShowNotification] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState('');
-  const [isZoomed, setIsZoomed] = useState(false);
-  const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
   const imageContainerRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   
@@ -158,52 +156,6 @@ export default function ProductCard({
   
   const handleMouseLeave = () => {
     setIsHovered(false);
-    setIsZoomed(false);
-  };
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!imageContainerRef.current) return;
-    
-    const container = imageContainerRef.current;
-    const rect = container.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    // Calculate percentage position (0-100)
-    const percentX = (x / rect.width) * 100;
-    const percentY = (y / rect.height) * 100;
-    
-    // Clamp values between 0 and 100
-    const clampedX = Math.max(0, Math.min(100, percentX));
-    const clampedY = Math.max(0, Math.min(100, percentY));
-    
-    setZoomPosition({ x: clampedX, y: clampedY });
-    setIsZoomed(true);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (!imageContainerRef.current) return;
-    
-    const container = imageContainerRef.current;
-    const rect = container.getBoundingClientRect();
-    const touch = e.touches[0];
-    const x = touch.clientX - rect.left;
-    const y = touch.clientY - rect.top;
-    
-    // Calculate percentage position (0-100)
-    const percentX = (x / rect.width) * 100;
-    const percentY = (y / rect.height) * 100;
-    
-    // Clamp values between 0 and 100
-    const clampedX = Math.max(0, Math.min(100, percentX));
-    const clampedY = Math.max(0, Math.min(100, percentY));
-    
-    setZoomPosition({ x: clampedX, y: clampedY });
-    setIsZoomed(true);
-  };
-
-  const handleTouchEnd = () => {
-    setIsZoomed(false);
   };
 
   const handleImageError = () => {
@@ -327,11 +279,8 @@ export default function ProductCard({
       {/* Product Image */}
       <div 
         ref={imageContainerRef}
-        className="block relative overflow-hidden rounded-t-xl bg-soft-pink-100 dark:bg-[#2D1A2F] aspect-square cursor-zoom-in flex-shrink-0 product-image-zoom-container"
+        className="block relative overflow-hidden rounded-t-xl bg-soft-pink-100 dark:bg-[#2D1A2F] aspect-square cursor-pointer flex-shrink-0"
         onClick={handleProductClick}
-        onMouseMove={handleMouseMove}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
       >
         <div className="w-full h-full relative">
           {currentImageUrl && !imageError ? (
@@ -340,14 +289,9 @@ export default function ProductCard({
                 src={currentImageUrl}
                 alt={name}
                 fill
-                className={`object-cover hover-lift transition-transform duration-700 ease-in-out ${
-                  isZoomed ? 'product-image-zoomed' : ''
-                }`}
+                className="object-cover"
                 sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                 onError={handleImageError}
-                style={{
-                  transformOrigin: `${zoomPosition.x}% ${zoomPosition.y}%`,
-                }}
               />
             </>
           ) : (

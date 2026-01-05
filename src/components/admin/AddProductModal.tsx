@@ -38,6 +38,8 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
   const [categories, setCategories] = useState<any[]>([]);
   const [occasions, setOccasions] = useState<CollectionOccasion[]>([]);
   const [selectedOccasions, setSelectedOccasions] = useState<string[]>([]);
+  const [collections, setCollections] = useState<any[]>([]);
+  const [selectedCollections, setSelectedCollections] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [imagePreviews, setImagePreviews] = useState<Array<{ file: File; preview: string }>>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -79,6 +81,28 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
       setOccasions([]);
     }
   };
+
+  const loadCollections = async (occasionValues: string[] = []) => {
+    try {
+      const result = await adminService.getCollections(occasionValues);
+      if (result.success) {
+        setCollections(result.data);
+      } else {
+        console.error('Error loading collections:', result.error);
+        setCollections([]);
+      }
+    } catch (err) {
+      console.error('Error loading collections:', err);
+      setCollections([]);
+    }
+  };
+
+  // Load collections when occasions change
+  useEffect(() => {
+    if (isOpen) {
+      loadCollections(selectedOccasions);
+    }
+  }, [selectedOccasions, isOpen]);
 
   // Generate slug from name
   const generateSlug = (name: string): string => {
@@ -201,7 +225,8 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
     if (formData.width && parseFloat(formData.width) < 0) newErrors.width = 'Width cannot be negative';
     if (formData.height && parseFloat(formData.height) < 0) newErrors.height = 'Height cannot be negative';
     if (imagePreviews.length === 0) newErrors.image = 'At least one product image is required';
-    if (selectedOccasions.length === 0) newErrors.occasions = 'At least one collection/occasion is required';
+    if (selectedOccasions.length === 0) newErrors.occasions = 'At least one occasion is required';
+    if (selectedCollections.length === 0) newErrors.collections = 'At least one collection is required';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -252,6 +277,8 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
       }
       // Occasions are required, so always include them
       productData.occasions = selectedOccasions;
+      // Collections are required, so always include them
+      productData.collections = selectedCollections;
       if (formData.weight) {
         productData.weight = parseFloat(formData.weight);
       }
@@ -340,16 +367,27 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
       image: ''
     });
     setSelectedOccasions([]);
+    setSelectedCollections([]);
+    setCollections([]);
     setImagePreviews([]);
     setErrors({});
   };
 
   const handleOccasionChange = (occasionValue: string) => {
     setSelectedOccasions(prev => {
-      if (prev.includes(occasionValue)) {
-        return prev.filter(occ => occ !== occasionValue);
+      const newOccasions = prev.includes(occasionValue)
+        ? prev.filter(occ => occ !== occasionValue)
+        : [...prev, occasionValue];
+      return newOccasions;
+    });
+  };
+
+  const handleCollectionChange = (collectionId: string) => {
+    setSelectedCollections(prev => {
+      if (prev.includes(collectionId)) {
+        return prev.filter(col => col !== collectionId);
       } else {
-        return [...prev, occasionValue];
+        return [...prev, collectionId];
       }
     });
   };
@@ -529,7 +567,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
         {/* Occasions Multi-Select - Tag Style */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Collections / Occasions <span className="text-red-500">*</span>
+            Occasions <span className="text-red-500">*</span>
           </label>
           {occasions.length === 0 ? (
             <p className="text-sm text-gray-500">Loading occasions...</p>
@@ -559,6 +597,43 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
           )}
           {errors.occasions && <p className="mt-1 text-sm text-red-600">{errors.occasions}</p>}
           <p className="mt-2 text-xs text-gray-500">Click on tags to select/deselect occasions</p>
+        </div>
+
+        {/* Collections Multi-Select - Tag Style */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Collections <span className="text-red-500">*</span>
+          </label>
+          {selectedOccasions.length === 0 ? (
+            <p className="text-sm text-gray-500 italic">Please select at least one occasion first to see available collections</p>
+          ) : collections.length === 0 ? (
+            <p className="text-sm text-gray-500">Loading collections...</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {collections.map((collection) => {
+                const isSelected = selectedCollections.includes(collection._id || collection.id);
+                return (
+                  <button
+                    key={collection._id || collection.id}
+                    type="button"
+                    onClick={() => handleCollectionChange(collection._id || collection.id)}
+                    className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
+                      isSelected
+                        ? 'bg-green-600 text-white hover:bg-green-700 shadow-md'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300'
+                    } ${errors.collections ? 'border-red-500' : ''}`}
+                  >
+                    <span>{collection.name}</span>
+                    {isSelected && (
+                      <Close className="ml-2 w-4 h-4 hover:scale-110 transition-transform" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          {errors.collections && <p className="mt-1 text-sm text-red-600">{errors.collections}</p>}
+          <p className="mt-2 text-xs text-gray-500">Click on tags to select/deselect collections. Collections are filtered based on selected occasions.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
