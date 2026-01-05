@@ -619,14 +619,14 @@ export default function Home() {
               transition={{ duration: 0.8, ease: "easeOut" }}
               className="flex items-center justify-center"
             >
-              <div className="relative w-[70vw] h-[70vw] max-w-[400px] max-h-[400px] xs:w-[65vw] xs:h-[65vw] xs:max-w-[450px] xs:max-h-[450px] sm:w-[60vw] sm:h-[60vw] sm:max-w-[500px] sm:max-h-[500px] md:w-[55vw] md:h-[55vw] md:max-w-[550px] md:max-h-[550px] lg:w-[50vw] lg:h-[50vw] lg:max-w-[600px] lg:max-h-[600px]">
+              <div className="relative w-[95vw] h-[95vw] max-w-[600px] max-h-[600px] xs:w-[90vw] xs:h-[90vw] xs:max-w-[650px] xs:max-h-[650px] sm:w-[85vw] sm:h-[85vw] sm:max-w-[700px] sm:max-h-[700px] md:w-[70vw] md:h-[70vw] md:max-w-[600px] md:max-h-[600px] lg:w-[50vw] lg:h-[50vw] lg:max-w-[600px] lg:max-h-[600px]">
                 <Image
                   src="/images/fefa_logo_transparent_4k.png"
                   alt="FEFA Logo"
                   fill
                   className="object-contain drop-shadow-2xl"
                   priority
-                  sizes="(max-width: 475px) 70vw, (max-width: 640px) 65vw, (max-width: 768px) 60vw, (max-width: 1024px) 55vw, (max-width: 1280px) 50vw, 50vw"
+                  sizes="(max-width: 475px) 95vw, (max-width: 640px) 90vw, (max-width: 768px) 85vw, (max-width: 1024px) 70vw, (max-width: 1280px) 50vw, 50vw"
                 />
               </div>
             </motion.div>
