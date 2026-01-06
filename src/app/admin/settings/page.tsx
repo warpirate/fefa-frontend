@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   MdSave as Save,
   MdCloudUpload as Upload,
@@ -14,9 +14,12 @@ import {
   MdVpnKey as Key,
   MdWarning as AlertTriangle
 } from 'react-icons/md';
+import settingsService from '../../../services/settingsService';
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('general');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState({
     // General Settings
     storeName: 'FEFA Jewelry',
@@ -66,6 +69,33 @@ export default function SettingsPage() {
     adminNotifications: true,
   });
 
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    try {
+      setLoading(true);
+      const result = await settingsService.getSettings();
+      
+      if (result.success && result.data) {
+        setSettings(prevSettings => ({
+          ...prevSettings,
+          ...result.data,
+          // Convert numbers to strings for form inputs
+          smtpPort: result.data.smtpPort?.toString() || '587',
+          sessionTimeout: result.data.sessionTimeout?.toString() || '24',
+          passwordMinLength: result.data.passwordMinLength?.toString() || '8',
+          maxLoginAttempts: result.data.maxLoginAttempts?.toString() || '5'
+        }));
+      }
+    } catch (err) {
+      console.error('Error loading settings:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     setSettings(prev => ({
@@ -74,8 +104,32 @@ export default function SettingsPage() {
     }));
   };
 
-  const handleSave = () => {
-    // Handle save logic
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      
+      // Convert string values back to numbers for certain fields
+      const settingsToSave = {
+        ...settings,
+        smtpPort: parseInt(settings.smtpPort) || 587,
+        sessionTimeout: parseInt(settings.sessionTimeout) || 24,
+        passwordMinLength: parseInt(settings.passwordMinLength) || 8,
+        maxLoginAttempts: parseInt(settings.maxLoginAttempts as any) || 5
+      };
+      
+      const result = await settingsService.updateSettings(settingsToSave);
+      
+      if (result.success) {
+        alert('Settings saved successfully!');
+      } else {
+        alert(`Failed to save settings: ${result.error}`);
+      }
+    } catch (err) {
+      console.error('Error saving settings:', err);
+      alert('Failed to save settings');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const tabs = [
@@ -665,10 +719,11 @@ export default function SettingsPage() {
             <div className="px-4 py-3 bg-gray-50 text-right sm:px-6">
               <button
                 onClick={handleSave}
-                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                disabled={saving}
+                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Save className="h-4 w-4 mr-2" />
-                Save Changes
+                {saving ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>

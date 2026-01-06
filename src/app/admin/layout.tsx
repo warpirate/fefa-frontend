@@ -48,6 +48,9 @@ export default function AdminLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -153,12 +156,93 @@ export default function AdminLayout({
     }
   };
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      // Implement search functionality
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+
+    try {
+      setSearchLoading(true);
+      
+      // Import adminService dynamically to avoid circular dependencies
+      const adminService = (await import('../../../services/adminService')).default;
+      
+      // Search across products, orders, and users
+      const [productsRes, ordersRes, usersRes] = await Promise.all([
+        adminService.getAllProducts({ search: searchQuery, limit: 5 }),
+        adminService.getAllOrders({ search: searchQuery, limit: 5 }),
+        adminService.getAllUsers({ search: searchQuery, limit: 5 })
+      ]);
+
+      const results: any[] = [];
+
+      if (productsRes.success && productsRes.data) {
+        productsRes.data.forEach((product: any) => {
+          results.push({
+            type: 'product',
+            id: product._id,
+            title: product.name,
+            subtitle: `SKU: ${product.sku}`,
+            link: `/admin/products?search=${product.sku}`
+          });
+        });
+      }
+
+      if (ordersRes.success && ordersRes.data) {
+        ordersRes.data.forEach((order: any) => {
+          results.push({
+            type: 'order',
+            id: order._id,
+            title: order.orderNumber,
+            subtitle: `₹${order.pricing?.total || 0} - ${order.status}`,
+            link: `/admin/orders/${order._id}`
+          });
+        });
+      }
+
+      if (usersRes.success && usersRes.data) {
+        usersRes.data.forEach((user: any) => {
+          results.push({
+            type: 'user',
+            id: user._id,
+            title: `${user.firstName} ${user.lastName}`,
+            subtitle: user.email,
+            link: `/admin/users?search=${user.email}`
+          });
+        });
+      }
+
+      setSearchResults(results);
+      setShowSearchResults(true);
+    } catch (error) {
+      console.error('Search error:', error);
+    } finally {
+      setSearchLoading(false);
     }
   };
+
+  const handleSearchResultClick = (link: string) => {
+    setShowSearchResults(false);
+    setSearchQuery('');
+    setSearchResults([]);
+    router.push(link);
+  };
+
+  // Close search results when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.search-container')) {
+        setShowSearchResults(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const closeSidebar = () => {
     setSidebarOpen(false);
@@ -408,19 +492,65 @@ export default function AdminLayout({
           {/* Right side controls */}
           <div className="flex items-center gap-x-2 sm:gap-x-4 lg:gap-x-6">
             {/* Search - responsive */}
-            <div className="hidden md:flex items-center admin-fade-in">
+            <div className="hidden md:flex items-center admin-fade-in search-container relative">
               <form onSubmit={handleSearch} className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Search className="h-4 w-4 text-gray-400 transition-colors duration-200" />
                 </div>
                 <input
                   type="text"
-                  placeholder="Search..."
+                  placeholder="Search products, orders, users..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="admin-search-input block w-48 lg:w-64 xl:w-80 pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm transition-all duration-300 hover:border-gray-400 transform hover:scale-105 focus:scale-105"
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    if (!e.target.value.trim()) {
+                      setShowSearchResults(false);
+                    }
+                  }}
+                  className="admin-search-input block w-48 lg:w-64 xl:w-80 pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm transition-all duration-300 hover:border-gray-400"
                 />
               </form>
+
+              {/* Search Results Dropdown */}
+              {showSearchResults && (
+                <div className="absolute z-50 mt-2 w-96 bg-white rounded-lg shadow-lg border border-gray-200 max-h-96 overflow-y-auto top-full right-0">
+                  {searchLoading ? (
+                    <div className="p-4 text-center">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
+                    </div>
+                  ) : searchResults.length > 0 ? (
+                    <div className="py-2">
+                      {searchResults.map((result) => (
+                        <button
+                          key={`${result.type}-${result.id}`}
+                          onClick={() => handleSearchResultClick(result.link)}
+                          className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0"
+                        >
+                          <div className="flex items-center space-x-3">
+                            <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                              result.type === 'product' ? 'bg-blue-100' :
+                              result.type === 'order' ? 'bg-green-100' :
+                              'bg-purple-100'
+                            }`}>
+                              {result.type === 'product' && <Package className="h-4 w-4 text-blue-600" />}
+                              {result.type === 'order' && <ShoppingCart className="h-4 w-4 text-green-600" />}
+                              {result.type === 'user' && <Users className="h-4 w-4 text-purple-600" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900 truncate">{result.title}</p>
+                              <p className="text-xs text-gray-500 truncate">{result.subtitle}</p>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-4 text-center text-sm text-gray-500">
+                      No results found for "{searchQuery}"
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Notifications */}

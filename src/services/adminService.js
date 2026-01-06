@@ -20,12 +20,13 @@ class AdminService {
   // Get dashboard statistics
   async getDashboardStats() {
     try {
-      const [productsRes, categoriesRes, usersRes, ordersRes, bannersRes] = await Promise.all([
+      const [productsRes, categoriesRes, usersRes, ordersRes, bannersRes, reviewsCountRes] = await Promise.all([
         this.getAllProducts({ limit: 1 }),
         this.getAllCategories({ limit: 1 }),
         this.getAllUsers({ limit: 1 }),
         this.getAllOrders({ limit: 1 }),
-        this.getAllBanners({ limit: 1 })
+        this.getAllBanners({ limit: 1 }),
+        this.getPendingReviewsCount()
       ]);
 
       const stats = {
@@ -36,7 +37,7 @@ class AdminService {
         totalBanners: bannersRes.success ? bannersRes.pagination?.totalBanners || 0 : 0,
         totalRevenue: ordersRes.success ? ordersRes.totalRevenue || 0 : 0,
         activeBanners: bannersRes.success ? bannersRes.activeBanners || 0 : 0,
-        pendingReviews: 0 // This would need a reviews endpoint
+        pendingReviews: reviewsCountRes.success ? reviewsCountRes.count || 0 : 0
       };
 
       return {
@@ -1444,6 +1445,157 @@ class AdminService {
       return {
         success: false,
         error: error.message || 'Failed to fetch orders'
+      };
+    }
+  }
+
+  // ==================== REVIEWS ====================
+
+  // Get all reviews (admin view)
+  async getAllReviews(params = {}) {
+    try {
+      const queryParams = new URLSearchParams();
+      
+      // Add pagination
+      if (params.page) queryParams.append('page', params.page);
+      if (params.limit) queryParams.append('limit', params.limit);
+      
+      // Add filters
+      if (params.search) queryParams.append('search', params.search);
+      if (params.status) queryParams.append('status', params.status);
+      if (params.rating) queryParams.append('rating', params.rating);
+      
+      const response = await fetch(`${this.baseURL}/reviews?${queryParams}`, {
+        method: 'GET',
+        headers: this.getAuthHeaders()
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch reviews');
+      }
+
+      return {
+        success: true,
+        data: data.data || [],
+        pagination: data.pagination,
+        pendingCount: data.pendingCount || 0
+      };
+    } catch (error) {
+      console.error('Get all reviews error:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to fetch reviews'
+      };
+    }
+  }
+
+  // Get pending reviews count
+  async getPendingReviewsCount() {
+    try {
+      const response = await fetch(`${this.baseURL}/reviews/pending/count`, {
+        method: 'GET',
+        headers: this.getAuthHeaders()
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch pending reviews count');
+      }
+
+      return {
+        success: true,
+        count: data.data?.count || 0
+      };
+    } catch (error) {
+      console.error('Get pending reviews count error:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to fetch pending reviews count',
+        count: 0
+      };
+    }
+  }
+
+  // Approve a review
+  async approveReview(reviewId) {
+    try {
+      const response = await fetch(`${this.baseURL}/reviews/${reviewId}/approve`, {
+        method: 'PATCH',
+        headers: this.getAuthHeaders()
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to approve review');
+      }
+
+      return {
+        success: true,
+        data: data.data
+      };
+    } catch (error) {
+      console.error('Approve review error:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to approve review'
+      };
+    }
+  }
+
+  // Reject a review
+  async rejectReview(reviewId) {
+    try {
+      const response = await fetch(`${this.baseURL}/reviews/${reviewId}/reject`, {
+        method: 'PATCH',
+        headers: this.getAuthHeaders()
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to reject review');
+      }
+
+      return {
+        success: true,
+        data: data.data
+      };
+    } catch (error) {
+      console.error('Reject review error:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to reject review'
+      };
+    }
+  }
+
+  // Delete a review (admin)
+  async deleteReview(reviewId) {
+    try {
+      const response = await fetch(`${this.baseURL}/reviews/${reviewId}`, {
+        method: 'DELETE',
+        headers: this.getAuthHeaders()
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to delete review');
+      }
+
+      return {
+        success: true,
+        message: data.message || 'Review deleted successfully'
+      };
+    } catch (error) {
+      console.error('Delete review error:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to delete review'
       };
     }
   }
