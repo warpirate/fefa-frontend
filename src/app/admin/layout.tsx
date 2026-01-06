@@ -181,7 +181,7 @@ export default function AdminLayout({
       setSearchLoading(true);
       
       // Import adminService dynamically to avoid circular dependencies
-      const adminService = (await import('../../../services/adminService')).default;
+      const adminService = (await import('../../services/adminService')).default;
       
       // Search across products, orders, and users
       const [productsRes, ordersRes, usersRes] = await Promise.all([

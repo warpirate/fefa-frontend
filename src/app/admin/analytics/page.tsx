@@ -267,7 +267,7 @@ export default function AnalyticsPage() {
           <div className="px-4 py-5 sm:p-6">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Revenue Trend</h3>
             <div className="h-64 flex items-end space-x-2">
-              {analyticsData.revenueChart.map((item, index) => (
+              {analyticsData.revenueChart.map((item: { month: string; revenue: number; orders: number }, index: number) => (
                 <div key={item.month} className="flex-1 flex flex-col items-center">
                   <div
                     className="w-full bg-blue-500 rounded-t"
