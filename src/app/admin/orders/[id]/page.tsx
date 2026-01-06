@@ -284,7 +284,7 @@ export default function OrderDetailsPage() {
                       <p className="text-sm text-gray-500">SKU: {item.sku}</p>
                       {item.variant && (
                         <p className="text-xs text-gray-500">
-                          {Object.entries(item.variant).map(([key, value]) => `${key}: ${value}`).join(', ')}
+                          {Object.entries(item.variant).map(([key, value]: [string, any]) => `${key}: ${value}`).join(', ')}
                         </p>
                       )}
                     </div>

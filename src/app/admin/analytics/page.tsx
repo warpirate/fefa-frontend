@@ -272,7 +272,7 @@ export default function AnalyticsPage() {
                   <div
                     className="w-full bg-blue-500 rounded-t"
                     style={{ 
-                      height: `${(item.revenue / Math.max(...analyticsData.revenueChart.map(d => d.revenue))) * 200}px` 
+                      height: `${(item.revenue / Math.max(...analyticsData.revenueChart.map((d: { month: string; revenue: number; orders: number }) => d.revenue))) * 200}px` 
                     }}
                   />
                   <div className="text-xs text-gray-500 mt-2">{item.month}</div>
@@ -344,7 +344,7 @@ export default function AnalyticsPage() {
           <div className="px-4 py-5 sm:p-6">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Top Products</h3>
             <div className="space-y-4">
-              {analyticsData.topProducts.map((product, index) => (
+              {analyticsData.topProducts.map((product: { name: string; sales: number; revenue: number; rating: number }, index: number) => (
                 <div key={index} className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <div className="flex-shrink-0">
@@ -385,7 +385,7 @@ export default function AnalyticsPage() {
           <div className="px-4 py-5 sm:p-6">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Recent Orders</h3>
             <div className="space-y-4">
-              {analyticsData.recentOrders.map((order) => (
+              {analyticsData.recentOrders.map((order: { id: string; customer: string; amount: number; status: string; date: string }) => (
                 <div key={order.id} className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-900">{order.customer}</p>
@@ -414,7 +414,7 @@ export default function AnalyticsPage() {
         <div className="px-4 py-5 sm:p-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Customer Segments</h3>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {analyticsData.customerSegments.map((segment, index) => (
+            {analyticsData.customerSegments.map((segment: { segment: string; count: number; percentage: number }, index: number) => (
               <div key={index} className="text-center">
                 <div className="text-2xl font-bold text-gray-900">{segment.count}</div>
                 <div className="text-sm text-gray-500">{segment.segment}</div>
