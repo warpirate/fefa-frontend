@@ -388,14 +388,14 @@ export default function OrderDetailsPage() {
                 <div className="flex items-center space-x-3">
                   <User className="h-5 w-5 text-gray-400" />
                   <span className="text-sm text-gray-900">
-                    {order.user.firstName} {order.user.lastName}
+                    {order.user ? `${order.user.firstName} ${order.user.lastName}` : 'User not found'}
                   </span>
                 </div>
                 <div className="flex items-center space-x-3">
                   <Mail className="h-5 w-5 text-gray-400" />
-                  <span className="text-sm text-gray-900">{order.user.email}</span>
+                  <span className="text-sm text-gray-900">{order.user?.email || 'N/A'}</span>
                 </div>
-                {order.user.phone && (
+                {order.user?.phone && (
                   <div className="flex items-center space-x-3">
                     <Phone className="h-5 w-5 text-gray-400" />
                     <span className="text-sm text-gray-900">{order.user.phone}</span>

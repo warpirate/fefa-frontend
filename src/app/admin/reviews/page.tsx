@@ -420,7 +420,7 @@ export default function ReviewsPage() {
       <div className="bg-white shadow overflow-hidden sm:rounded-md">
         <div className="px-4 py-5 sm:px-6">
           <h3 className="text-lg leading-6 font-medium text-gray-900">
-            Reviews ({filteredReviews.length})
+            Reviews ({filteredReviews.filter((review) => review.product).length})
           </h3>
         </div>
         {/* Loading/Error States */}
@@ -440,7 +440,9 @@ export default function ReviewsPage() {
 
         {!loading && !error && (
           <ul className="divide-y divide-gray-200">
-            {filteredReviews.map((review) => {
+            {filteredReviews
+              .filter((review) => review.product) // Filter out reviews with missing products
+              .map((review) => {
               const productImage = review.product.images?.find(img => img.isPrimary)?.url || review.product.images?.[0]?.url;
               
               return (
@@ -565,7 +567,7 @@ export default function ReviewsPage() {
             })}
 
             {/* Empty State */}
-            {filteredReviews.length === 0 && (
+            {filteredReviews.filter((review) => review.product).length === 0 && (
               <div className="text-center py-12">
                 <Package className="mx-auto h-12 w-12 text-gray-400" />
                 <h3 className="mt-2 text-sm font-medium text-gray-900">No reviews found</h3>

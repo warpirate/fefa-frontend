@@ -114,6 +114,19 @@ export default function AdminLayout({
     }
   }, [isAuthenticated, isAdmin, isLoading, isLogoutInProgress, router]);
 
+  // Close search results when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.search-container')) {
+        setShowSearchResults(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   // Show loading while checking authentication
   if (isLoading) {
     return (
@@ -230,19 +243,6 @@ export default function AdminLayout({
     setSearchResults([]);
     router.push(link);
   };
-
-  // Close search results when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      if (!target.closest('.search-container')) {
-        setShowSearchResults(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   const closeSidebar = () => {
     setSidebarOpen(false);
